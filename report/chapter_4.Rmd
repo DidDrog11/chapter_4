@@ -1,0 +1,54 @@
+---
+title: "Serological investigation of Lassa mammarenavirus among rodent species in Eastern Sierra Leone."
+author:
+  - name: "David Simons"
+    url: https://github.com/diddrog11/rodent_trapping
+    affiliation: The Royal Veterinary College, London, UK
+    affiliation_url: https://www.rvc.ac.uk
+    orcid_id: 0000-0001-9655-1656
+date: "`r Sys.Date()`"
+output:
+  # distill::distill_article:
+  #   self_contained: false
+  #   toc: true
+   html_document
+  # word_document
+bibliography: citations.bib
+categories:
+  - Lassa
+---
+
+```{r setup, include=FALSE, quietly=TRUE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+library(here)
+```
+
+# Abstract
+
+The primary host of *Lassa mammarenavirus*, the causative pathogen of Lassa fever, is *Mastomys natalensis*. However, evidence of prior infection has been observed in ten further rodent species in West Africa. To investigate the maintenance of *Lassa mammarenavirus* in rodent species assemblages we have conducted four-monthly rodent trapping surveys in a Lassa fever endemic region of Sierra Leone. We conducted two serological assays on samples obtained from trapped rodents. First, a novel LIPS assay developed by the study team was performed, second, a previously developed and validated rodent ELISA. We report seroprevalence to *Lassa mammarenavirus* within these rodent species assemblages investigating the association with rodent age and habitat location on serological status. We expect to find that the majority of seropositive individuals are from the expected reservoir species and that a cyclical pattern of seropositivity is observed, associated with periods of high reservoir species abundance, low species diversity and concentration within human dominated habitats. Further, we expect that non-reservoir species will show peaks in seropositivity associated with peaks in the reservoir species, potentially representing spillover infections. These data will be used to inform a model of viral transmission among reservoir and non-reservoir species and will be compared to seasonal data in human Lassa fever infections obtained from hospital data available in the literature. Further, we expect to show the concordance between the novel LIPS assay and ELISA in detecting prior exposure to *Lassa mammarenavirus* providing another tool to investigate viral transmission dynamics among rodent species. Finally, this data may highlight the importance of surveying the entire rodent species assemblage rather than limiting sample analysis to the known reservoir when investigating the risk of pathogen spillover.
+
+# Introduction
+
+# Methods
+
+## Rodent samples
+
+## ELISA
+
+The ELISA was performed using the BLACKBOX® LASV IgG ELISA Kit developed by the Diagnostics Development Laboratory hosted at the Bernhard Nocht Institute for Tropical Medicine [ref]. The protocol is available as Supplementary Material 1. Briefly, 1 µL of whole blood was inactivated by mixing with the provided sample dilution buffer (1:50). Samples and negative and positive controls (provided by the supplier) were incubated on the provided ELISA plate for 24 hours at 4–8 °C in a wet chamber. Following incubation, the plates weere washed using a wash buffer with subsequent incubation for one hour with 1:10,000 diluted HRP-labelled streptavidin. A final wash was performed before the addition of 100 µL of 3,3’,5,5’-Tetramethylbenzidine (TMB) substrate to all the wells, which were then incubated for 10 min. The colorimetric reaction was stopped by adding 100 µL of a stop solution (sulphuric acid).
+
+In a deviation from the kit description the optical density (OD) at 450nm and 630nm was measured (as opposed to 450nm and 620nm). The index value was produced from the OD difference (OD_450_ - OD_630_) divided by the cut-off values (the mean values of the negative controls + 0.150). Samples were considered positive with index values greater or equal to 1.1, negative results less than or equal to 0.9, and inconclusive results when the index value lay between 0.9 and 1.1. Inconclusive results were repeated as advised by the kit manufacturers.
+
+## Statistical analysis
+
+# Results
+
+# Discussion
+
+# Conclusion
+
+# References
