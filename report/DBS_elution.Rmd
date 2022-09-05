@@ -1,0 +1,59 @@
+---
+title: "Dried blood spot extraction"
+author: "David Simons"
+date: "23/08/2022"
+output: pdf_document
+fontsize: 12pt
+---
+
+```{r setup, echo = FALSE, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      cache = FALSE, tidy = FALSE, size = "small")
+```
+
+# Dried blood spot (DBS) extraction
+
+Some samples are missing whole blood, for these we will use Sodium Azide in solution to extract the blood from the DBS.
+
+Sodium Azide is a toxic chemical and so must be handled in the fume cupboard with good ventilation. Small amounts of the chemical will be weighed and added to PBS tween so ensure you have all the equipment available in the fume cupboard to weigh it out and handle the material.
+
+## Equipment required
+
+  1. Dilution plate
+  2. Weighing balance
+  3. 1000µl, 200µl pipette and tips
+  4. Weighing boat
+  5. Spatula
+  6. 10ml Falcon tube
+  7. Paraffin sheets
+  8. Vortex
+  9. Fume hood
+  10. Sodium Azide
+  11. PBS tablets
+  12. Tween-20
+  13. DBS samples
+  14. Cryotubes
+
+## Production of PBS-Tween-Sodium Azide working solution
+
+  1. Produce PBS from the tablets following instructions to produce 20ml total volume.
+  2. Produce a Tween-20 working solution of 1:100 in PBS. Take 50µl of Tween-20 and dilute in 4,500µl (4.5ml of PBS). This gives a working solution of 0.05%.
+  3. Place 500µl into a 10ml Falcon tube.
+  4. Place 9,500µl (9.5ml) of PBS into the same tube.
+  5. Finally add 8mg of Sodium Azide into the tube.
+  6. Seal with paraffin and vortex the solution.
+  7. This is now a working solution for use in eluting the DBS
+  8. Discard this solution once you have used it.
+
+## Extraction of DBS
+
+  1. Cut out two dried blood spots for each filter paper and place them in a dilution plate. Try to ensure they sit on the bottom of the well.
+  2. Record the sample ID in the lab book placed in each well so we know which rodent the sample came from for the ELISA analysis.
+  3. Pipette 5µl of the working solution into the well.
+  4. Place a film over the dilution plate, you can use the films that came with the ELISA plates.
+  5. Leave overnight to ensure all the blood elutes from the filter paper.
+  6. The next day draw up 5µl of the sample and place into a cryotube.
+  7. The samples can be treated as if they are whole blood in the ELISA protocol.
+  8. Store excess sample in the whole blood storage for that study visit and label the tube appropriately, update the inventory with this number.
+  
+The filter papers should not contain as much blood as they did prior to the extraction and the fluid should be blood coloured. If it hasn't worked we may need to modify the protocol.

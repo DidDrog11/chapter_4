@@ -8,9 +8,9 @@ Planned analysis for chapter 4: Serological investigation of Lassa mammarenaviru
 
 All data required to reproduce the analysis will be stored in `input`.
 
-**Rodent data:** Cleaned rodent data will be obtained from `rodent_trapping.Rproj`.
+**Rodent data:** Cleaned rodent data will be obtained from [`rodent_trapping.Rproj`](https://github.com/DidDrog11/rodent_trapping).
 
-**Serological data:** Data will be obtained by analysis of rodent samples and will be stored in the `input` folder.
+**Serological data:** Data will be obtained by analysis of rodent samples in (`SL_lassa_ELISA.Rproj`)[https://github.com/DidDrog11/SL_lassa_ELISA].
 
 ### Code
 

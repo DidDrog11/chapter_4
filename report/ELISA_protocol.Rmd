@@ -1,0 +1,187 @@
+---
+title: "Lassa Protocol BLACKBOX"
+author: "David Simons"
+date: "25/03/2022"
+output: word_document
+fontsize: 12pt
+---
+
+```{r setup, echo = FALSE, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      cache = FALSE, tidy = FALSE, size = "small")
+```
+
+
+This is the minimally adapted protocol for the Lassa fever IgG ELISA protocol for use in Sierra Leone.
+
+The BLACKBOX LASV IgG ELISA kit is purchased from the Diagnostics Development Laboratory at the Bernhard Nocht Institute for Tropical Medicine. They are contactable at ddl_support@bnitm.de or on +49 40 42818 513. This protocol has been adapted from the November 2019 version. When making the order for the kit, request extra wash buffer and notify them that we are using manual wash processes so we use more of than would be expected.
+
+# Kit contents
+
+Kit allows 96 reactions, so with controls 91 rodent samples can be tested per kit.
+
+| Component | Supplied amount/packaging | Colour coding | Storage requirements |
+| ------- | -------| ---- | ----- |
+| Microwell plate (IgG) | 12 strips, that can be separated in sealed aluminium pouch with desiccant | N/A | 2 - 8°C (fridge) |
+| Positive control (IgG) | Pre-diluted bottle | Red cap | 2 - 8°C (fridge) |
+| Negative control (IgG) | Pre-diluted bottle | White cap | 2 - 8°C (fridge) |
+| Sample Dilution Buffer (SDB) | 100ml in 125ml bottle | Clear cap | 2 - 8°C (fridge) |
+| Conjugate Dilution Buffer (CDB) | 28ml in 30ml bottle | Blue cap | 2 - 8°C (fridge) |
+| Wash Buffer (10x concentrated) | 100ml in 125ml bottle | Clear cap | 2 - 8°C (fridge) |
+| Conjugate IgG (biotinylated recombinant LASV antigen) | 30µl in 0.5ml vial | -20°C (freezer) |
+| HRP-streptavidin | 25µl in 0.5ml vial | Clear cap | -20°C (freezer) |
+| Substrate | 14ml in a 15ml brown bottle | Brown cap | 2 - 8°C (fridge) |
+| Stop solution **n.b. contains Sulphuric acid** | 14ml in a 15ml brown bottle | Clear cap |  2 - 8°C (fridge) |
+| Adhesive foil | 2 pieces | N/A | N/A |
+| Manufacturer SOP | 1 | N/A | N/A |
+
+# Required further equipment
+
+| Component | Number |
+| ------ | -- |
+| Fridge and freezer capacity with backup power | 1 |
+| Container for incubating ELISA plate (plastic box) | 1 |
+| Paper towels | |
+| 1L liquid container | 1 |
+| Graduated cylinder | 1 |
+| Squeeze bottle for buffer | 1 |
+| Deionised water | |
+| Pipette tips for volumes up to 10µl, 100/200µl and 1000µl | Lots |
+| Calibrated pippettes for volumes up to 10µl, 100/200µl and 1000µl | 1 of each |
+| Multichannel (8) pippette for volumes up to 300µl | 1 |
+| Reagent reservoirs | 4 per run |
+| Dilution plate 96 wells | 1 per run |
+| ELISA plate reader (450nm, 620nm) | 1 |
+| Holders for cryovials (96 well) | 1 |
+| Fume cupboard/hood | 1 |
+| Waste bags | |
+| Non-sterile gloves | |
+| Lab coats | |
+| Surface disinfectant | |
+| Eppendorf or similar sample tubes (1.5ml) | multiple |
+| Large sample tubes (10ml +) | multiple |
+| Vortex or other means of mixing samples | 1 |
+
+# Consumables required per run (96 well plate)
+
+
+
+# 1 - Diluting wash buffer
+
+The wash buffer will be used in 1x concentration and is stable in the fridge for 1 week. Take 100ml of the Wash Buffer and put it into a 1L glass container and add 900ml of deionised water. Pour into a squeeze bottle.
+
+# 2 - Specimen preparation
+
+Rodent blood samples are preferred. 
+
+Samples will be selected and removed from the freezer to thaw. We will be using 1µl of the sample in each well. If the sample is dried blood or tissue add 5µl of SDB to try and release sample. 
+
+50µl of SDB is added to the dilution plate, not the control wells.
+
+Then add 1µl of sample to each well. Being careful about the sample going into the right well. Take a photo of the arrangement or document in lab notebook.
+
+# 3 - Conjugate preparation
+
+This is a 2 step dilution.
+
+**Conjugate pre-dilution**
+
+First prepare the pre-dilution by adding 1000µl of the CDB into an empty Eppendorf 1.5ml. Then remove the conjugate stock from the freezer and immediately remove 2µl of the solution (it does not need defrosting as it won't freeze) check the pipette tip to ensure solution is contained and no large drops are on the outside of the pipette. Place this volume into an Eppendorf pushing the volume out and drawing up several times to ensure all of the conjugate is into the pre-dilution volume, place the conjugate stock vial back into the freezer. Mix this Eppendorf thoroughly by vortexing. 
+
+**Conjugate working dilution**
+
+This pre-dilution will be further diluted to produce the Conjugate Working Solution by further dilution with CDB dependent on the number of strips being used. The figure below shows the dilutions dependent on the number of strips. For 12 strips (i.e. 96 wells) put 2880µl of CDB into a large sample tube and add 120µl of the Conjugate pre-dilution again pushing the volume out and drawing up several times to ensure clearance of the pipette tip. Vortex this tube to mix the Conjugate working dilution.
+
+<center>
+
+| Number of strips | Conjugate pre-dilution (µl) | CDB (µl) |
+| -- | ----- | ---- |
+| 1 | 20 | 480 |
+| 2 | 20 | 480 |
+| 3 | 30 | 720 |
+| 4 | 40 | 960 |
+| 5 | 50 | 1200 |
+| 6 | 60 | 1440 |
+| 7 | 70 | 1680 |
+| 8 | 80 | 1920 |
+| 9 | 90 | 2160 |
+| 10 | 100 | 2400 |
+| 11 | 110 | 2640 |
+| 12 | 120 | 2880 |
+
+</center>
+
+This will be added to the wells after washing.
+
+# 4 - Strip preparation
+
+Wash the strips 3 times with the diluted Wash Buffer using the squeeze bottle to fill each well with buffer. Leave for 30 seconds and empty the wells over the sink. Do this three times and once completed tap out the wells on some tissue paper to remove the liquid within the wells. Without letting the wells dry completely move onto the next step.
+
+# 5 - Adding Conjugate working solution, control samples and rodent samples
+
+Place the conjugate working dilution into a reservoir. Using a multichannel pipette we will place 25µl of this into each well. The same pipette tips can be used for all of these columns as there is no risk of cross-contamination here. 
+
+For the rodent sample dilutions in the dilution plate we can use a multichannel pipette to remove 25µl and place into the wells already containing conjugate working dilution. The pipette tips need to be changed between each column for this step. 
+
+Using a normal pipette take 25µl of the negative control and place into the first 2 wells of the first column (1A-B) and the positive control into the next well of the first column (1C), change the tip between each and ensure careful mixing.
+
+The base of each well needs to be completely covered with solution. If there are any large bubbles at this step use a clean dry pipette tip to pop the bubbles. Each well will need it's own pipette tip as there is risk of cross-contamination of samples if the same tip is used for multiple wells. The plate can then be covered and sealed with the adhesive foil.
+
+# 6 - Incubation for 24 hours
+
+The plate should be placed in a container on top of some wet paper towels and put in the fridge at 4°C for 24 hours.
+
+**END OF DAY 1**
+
+# 7 - HRP-Streptavidin preparation
+
+This step should be performed ~ 10 minutes prior to the end of the 24 hour incubation.
+
+We will next incubate the wells with HRP-Streptavidin which will produce the calorimetric reading following addition of the Substrate. This solution is in the freezer and will freeze so will need a minute or two out of the freezer prior to drawing up. Like the conjugate above this is a two step dilution. In an Eppendorf tube place 200µl of CDB and add 2µl of HRP-Streptavidin, again push the volume out and draw up several times to ensure clearance of the pipette tip. Vortex this Eppendorf in preparation for dilution inot the working solution and place the unused stock back into the freezer. The figure below shows the dilutions dependent on the number of strips. For 12 strips (i.e. 96 wells) put 5940µl of CDB into a large sample tube and add 60µl of the HRP-Streptavadin pre-dilution again pushing the volume out and drawing up several times to ensure clearance of the pipette tip. Vortex this tube to mix the working dilution.
+
+<center>
+
+| Number of strips | HRP-Streptavidin pre-dilution (µl) | CDB (µl) |
+| -- | ----- | ---- |
+| 1 | 5 | 495 |
+| 2 | 10 | 990 |
+| 3 | 15 | 1485 |
+| 4 | 20 | 1980 |
+| 5 | 25 | 2475 |
+| 6 | 30 | 2970 |
+| 7 | 35 | 3465 |
+| 8 | 40 | 3960 |
+| 9 | 45 | 4455 |
+| 10 | 50 | 4950 |
+| 11 | 55 | 5445 |
+| 11 | 60 | 5940 |
+
+</center>
+
+# 8 - Plate washing
+
+Wash the strips with 5 times with the Wash Buffer allowing the wells to soak for 30 seconds with each addition of Wash Buffer. Shake out over a sink for all of the steps and on the final wash tap out the excess fluid on paper towels. Do not let the wells dry completely before adding the HRP-Streptavidin working solution.
+
+# 9 - Adding HRP-Streptavidin solution
+
+Empty the vial of the working dilution of HRP-Streptavidin into a reservoir. Using a multichannel pipette draw up 50µl of the solution and place into each of the wells by running down the side to prevent formation of bubbles. Change the pipette tips for each column as this will prevent cross-contamination of wells. Ensure that the bottom of the wells are completely covered and seal with adhesive foil.
+
+# 10 - Incubation for 1 hour
+
+Place the sealed plate into a container with wet paper towels and leave in the fridge for 1 hour.
+
+# 11 - Plate washing
+
+Wash the strips with 5 times with the Wash Buffer allowing the wells to soak for 30 seconds with each addition of Wash Buffer. Shake out over a sink for all of the steps and on the final wash tap out the excess fluid on paper towels. Do not let the wells dry completely before adding the Substrate.
+
+# 12 - Addition of Substrate
+
+100µl of Substrate will go into each well. Pour the required amount of substrate with some additional amount into a reservoir (i.e. for 96 wells 9600µl + ~ 200µl). Using a multichannel pipette add 100µl of Substrate into each well against the wall to prevent bubbles and ensure the base of the wells are covered. Incubate the plate for 10 minutes at room temperature (20 - 25°C) in the dark, this can be done by placing a thick box over the plate. At this point positive wells will turn blue.
+
+# 13 - Stopping the reaction
+
+100µl of Stopping solution will go into each well. Pour the required amount of solution with some additional amount into a reservoir (i.e. for 96 wells 9600µl + ~ 200µl). Using a multichannel pipette add 100µl of the stopping solution into each well against the wall to prevent bubbles and ensure the base of the wells are covered. The blue colour in the wells will now become yellow. The plate must be read within 30 mins of adding the stop solution.
+
+# 14 - Measurement
+
+Measure the optical density of the plate at 450nm and 620nm using the microplate reader. **Add method depending on the plate reader in the lab in Sierra Leone**. The results will be associated with the plate layout that was produced at the sample preparation stage.
