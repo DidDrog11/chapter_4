@@ -223,6 +223,18 @@ produce_assemblages <- function(rodent_data = unique_rodents, distance = 50) {
 
 assemblages <- produce_assemblages(unique_rodents, distance = 50)
 
+# Consistent colours for species
+species_palette_df <- assemblages$assemblages %>%
+  tibble() %>%
+  select(initial_species_id) %>%
+  mutate(species = str_to_sentence(str_replace_all(initial_species_id, "_", " "))) %>%
+  distinct(species) %>%
+  mutate(colour = colorRampPalette(brewer.pal(9, 
+                                              "Set1"))(13))
+species_palette <- c(species_palette_df$colour)
+names(species_palette) <- c(species_palette_df$species)
+
+# Landuse graphs
 
 ggraph(assemblages$graphs$species_graph_village, layout = "kk") +
   geom_edge_fan0(aes(colour = prop, width = prop)) +
@@ -253,3 +265,208 @@ ggraph(assemblages$graphs$species_graph_forest, layout = "kk") +
   scale_edge_width(range = c(0, 3)) +
   theme_graph(title_size = 16, base_family = "sans") +
   labs(title = "Forest")
+
+# Contact networks --------------------------------------------------------
+
+network <- assemblages$assemblages %>%
+  tibble() %>%
+  filter(same_visit == TRUE) %>%
+  select(village, visit, grid_number, simple_habitat, interpretation, reference_id, rodent_id, initial_species_id, reference_rodent) %>%
+  mutate(reference_id = coalesce(reference_id, rodent_id)) %>%
+  group_by(reference_id) %>%
+  mutate(reference_name = case_when(reference_rodent == TRUE ~ initial_species_id,
+                                    reference_rodent == FALSE ~ initial_species_id[reference_rodent == TRUE]),
+         interpretation = case_when(reference_rodent == TRUE ~ interpretation,
+                                    reference_rodent == FALSE ~ interpretation[reference_rodent == TRUE])) %>%
+  group_by(simple_habitat) %>%
+  group_split()
+
+names(network) <- lapply(network, function(x) {unique(x$simple_habitat)})
+
+edgelist <- lapply(network, function(x) {x %>%
+    select(from_id = reference_id, to_id = rodent_id, from_species = reference_name, to_species = initial_species_id, edge_sero = interpretation, )})
+
+nodelist <- lapply(network, function(x) {
+  
+  from_rodents <- x %>%
+    select(node_id = reference_id, species = reference_name, village, visit, grid_number, simple_habitat, interpretation)
+  
+  to_rodents <- x %>%
+    filter(!rodent_id %in% from_rodents$node_id) %>%
+    select(node_id = reference_id, species = initial_species_id, village, visit, grid_number, simple_habitat, interpretation)
+  
+  nodelist = bind_rows(from_rodents, to_rodents) %>%
+    distinct()
+  
+  return(nodelist)
+})
+
+graph_landuse <- mapply(X = edgelist,
+                        Y = nodelist,
+                        function(X, Y) 
+                        { g_landuse <- graph_from_data_frame(d = X, directed = FALSE)
+                        
+                        v_species <- Y %>% 
+                          filter(node_id %in% V(g_landuse)$name)
+                        
+                        g_landuse <- set_vertex_attr(g_landuse, "Species", value = str_to_sentence(str_replace_all(v_species$species, "_", " ")))
+                        g_landuse <- set_vertex_attr(g_landuse, "Village", value = str_to_sentence(v_species$village))
+                        g_landuse <- set_vertex_attr(g_landuse, "Serostatus", value = str_to_sentence(v_species$interpretation))
+                        g_landuse <- set_vertex_attr(g_landuse, "Landuse", value = str_to_sentence(v_species$simple_habitat))
+                        g_landuse <- set_vertex_attr(g_landuse, "Visit", value = str_to_sentence(v_species$visit))
+                        g_landuse <- set_vertex_attr(g_landuse, "Grid", value = str_to_sentence(v_species$grid_number))
+                        
+                        return(g_landuse)
+                        })
+
+plot_graphs <- list()
+
+for(i in 1:length(graph_landuse)) {
+  
+  plot_graphs[[i]] <- ggraph(graph_landuse[[i]], layout = "fr") +
+    geom_edge_link() +
+    geom_node_point(aes(colour = Species), size = 3) +
+    # geom_mark_hull(aes(x = x, y = y, fill = Village)) +
+    theme_graph(base_family = 'Helvetica', title_size = 16) +
+    scale_colour_manual(values = species_palette, drop = FALSE) +
+    labs(title = str_to_sentence(str_replace_all(names(graph_landuse[i]), "_", " ")))
+  
+}
+
+save_plot(plot = plot_graphs[[1]], filename = here("output", "agriculture_graph.pdf"), base_height = 12, base_width = 16)
+save_plot(plot = plot_graphs[[2]], filename = here("output", "forest_graph.pdf"), base_height = 12, base_width = 16)
+save_plot(plot = plot_graphs[[3]], filename = here("output", "village_graph.pdf"), base_height = 12, base_width = 16)
+
+# Landuse network metrics
+
+graph_metrics <- bind_graphs(as_tbl_graph(graph_landuse$agriculture),
+                        as_tbl_graph(graph_landuse$secondary_forest),
+                        as_tbl_graph(graph_landuse$village)) %>%
+  activate(nodes) %>%
+  mutate(n_neighbours = local_size(mindist = 0),
+         degree = centrality_degree(),
+         betweenness = centrality_betweenness(directed = FALSE),
+         effective_network = node_effective_network_size(),
+         closeness = centrality_closeness_harmonic()) %>%
+  as_tibble()
+
+graph_metrics %>%
+  ggplot() +
+  geom_bar(aes(x = degree)) +
+  facet_wrap(~ Landuse) +
+  theme_bw()
+
+graph_metrics %>%
+  ggplot() +
+  geom_histogram(aes(x = betweenness)) +
+  facet_wrap(~ Landuse) +
+  theme_bw()
+
+graph_metrics %>%
+  ggplot() +
+  geom_histogram(aes(x = effective_network)) +
+  facet_wrap(~ Landuse) +
+  theme_bw()
+
+graph_metrics %>%
+  ggplot() +
+  geom_histogram(aes(x = closeness)) +
+  facet_wrap(~ Landuse) +
+  theme_bw()
+
+# Village landuse graphs
+graph_village <- lapply(graph_landuse, function(x) {
+  
+  baiama <- as_tbl_graph(x) %>%
+    activate(nodes) %>%
+    filter(Village == "Baiama")
+  
+  lalehun <- as_tbl_graph(x) %>%
+    activate(nodes) %>%
+    filter(Village == "Lalehun")
+  
+  lambayama <- as_tbl_graph(x) %>%
+    activate(nodes) %>%
+    filter(Village == "Lambayama")
+  
+  seilama <- as_tbl_graph(x) %>%
+    activate(nodes) %>%
+    filter(Village == "Seilama")
+  
+  return(list(baiama = baiama,
+              lalehun = lalehun,
+              lambayama = lambayama,
+              seilama = seilama))
+
+})
+
+for(i in 1:length(graph_village)) {
+  
+  baiama <- ggraph(graph_village[[i]]$baiama, layout = "fr") +
+    geom_edge_link() +
+    geom_node_point(aes(colour = Species), size = 2) +
+    theme_graph(title_size = 12) +
+    scale_colour_manual(values = species_palette, drop = FALSE) +
+    labs(title = paste0(str_to_sentence(str_replace_all(names(graph_landuse[i]), "_", " ")), " - Baiama")) +
+    theme(plot.background = element_rect(fill = "gray86"), panel.background = element_rect(fill = "white"))
+  
+  lalehun <- ggraph(graph_village[[i]]$lalehun, layout = "fr") +
+    geom_edge_link() +
+    geom_node_point(aes(colour = Species), size = 2) +
+    theme_graph(title_size = 12) +
+    scale_colour_manual(values = species_palette, drop = FALSE) +
+    labs(title = paste0(str_to_sentence(str_replace_all(names(graph_landuse[i]), "_", " ")), " - Lalehun")) +
+    theme(plot.background = element_rect(fill = "gray86"), panel.background = element_rect(fill = "white"))
+  
+  lambayama <- ggraph(graph_village[[i]]$lambayama, layout = "fr") +
+    geom_edge_link() +
+    geom_node_point(aes(colour = Species), size = 2) +
+    theme_graph(title_size = 12) +
+    scale_colour_manual(values = species_palette, drop = FALSE) +
+    labs(title = paste0(str_to_sentence(str_replace_all(names(graph_landuse[i]), "_", " ")), " - Lambayama")) +
+    theme(plot.background = element_rect(fill = "gray86"), panel.background = element_rect(fill = "white"))
+  
+  seilama <- ggraph(graph_village[[i]]$seilama, layout = "fr") +
+    geom_edge_link() +
+    geom_node_point(aes(colour = Species), size = 2) +
+    theme_graph(title_size = 12) +
+    scale_colour_manual(values = species_palette, drop = FALSE) +
+    labs(title = paste0(str_to_sentence(str_replace_all(names(graph_landuse[i]), "_", " ")), " - Seilama")) +
+    theme(plot.background = element_rect(fill = "gray86"), panel.background = element_rect(fill = "white"))
+  
+  legend <- get_legend(baiama +
+                         guides(color = guide_legend(nrow = 1)) +
+                         theme(legend.position = "bottom"))
+  
+  combined_plots <- plot_grid(plotlist = list(baiama + theme(legend.position = "none"), 
+                                              lalehun + theme(legend.position = "none"),
+                                              lambayama + theme(legend.position = "none"),
+                                              seilama + theme(legend.position = "none")),
+                              rel_heights = 0.9)
+  
+  plot_grid(plotlist = list(combined_plots, legend), rel_heights = c(10, 1), ncol = 1)
+}
+
+
+# Networks for positive rodents
+positive_networks <- lapply(graph_landuse, function(x) {
+  
+  g2 <- as_tbl_graph(x) %>%
+    activate(edges) %>%
+    filter(edge_sero == "Positive") %>%
+    activate(nodes) %>%
+    filter(!node_is_isolated())})
+
+plot_positive <- list()
+
+for(i in 1:length(positive_networks)) {
+  
+  plot_positive[[i]] <- ggraph(positive_networks[[i]], layout = "fr") +
+    geom_edge_link() +
+    geom_node_point(aes(colour = Serostatus), size = 2) +
+    # geom_mark_hull(aes(x = x, y = y, fill = Village)) +
+    theme_graph(base_family = 'Helvetica', title_size = 16) +
+    scale_colour_discrete() +
+    labs(title = str_to_sentence(str_replace_all(names(positive_networks[i]), "_", " ")))
+  
+}
