@@ -1,10 +1,25 @@
 # Load in the rodent data
 unique_rodents <- read_rds(here("data", "unique_rodents.rds")) %>%
   drop_na(initial_species_id) %>%
+  drop_na(grid_number) %>%
   st_as_sf(crs = default_CRS) %>%
   st_transform(crs = SL_UTM)
 
-produce_assemblages <- function(rodent_data = unique_rodents, distance = 50) {
+# Calculate the area trapped for each grid in each village
+trap_sites <- trap_locations %>%
+  group_by(village, simple_habitat, visit, grid_number) %>%
+  group_split()
+
+site_area <- lapply(trap_sites, function(x) {
+  
+  st_as_sf(x, coords = c("trap_easting", "trap_northing"), crs = SL_UTM) %>%
+    st_union() %>%
+    st_convex_hull() %>%
+    st_area()
+  
+})
+
+produce_assemblages <- function(rodent_data = unique_rodents, distance = 15) {
   
   units(distance) <- "meters"
   
@@ -221,7 +236,7 @@ produce_assemblages <- function(rodent_data = unique_rodents, distance = 50) {
   
 }
 
-assemblages <- produce_assemblages(unique_rodents, distance = 50)
+assemblages <- produce_assemblages(unique_rodents, distance = 15)
 
 # Consistent colours for species
 species_palette_df <- assemblages$assemblages %>%
@@ -374,79 +389,250 @@ graph_metrics %>%
   facet_wrap(~ Landuse) +
   theme_bw()
 
-# Village landuse graphs
-graph_village <- lapply(graph_landuse, function(x) {
-  
-  baiama <- as_tbl_graph(x) %>%
-    activate(nodes) %>%
-    filter(Village == "Baiama")
-  
-  lalehun <- as_tbl_graph(x) %>%
-    activate(nodes) %>%
-    filter(Village == "Lalehun")
-  
-  lambayama <- as_tbl_graph(x) %>%
-    activate(nodes) %>%
-    filter(Village == "Lambayama")
-  
-  seilama <- as_tbl_graph(x) %>%
-    activate(nodes) %>%
-    filter(Village == "Seilama")
-  
-  return(list(baiama = baiama,
-              lalehun = lalehun,
-              lambayama = lambayama,
-              seilama = seilama))
+# Networks for each visit and grid
 
+# Agriculture
+agricultural_graphs <- as_tbl_graph(graph_landuse$agriculture) %>%
+  activate(nodes) %>%
+  mutate(Species = factor(Species)) %>%
+  to_split(Village, Grid, Visit, split_by = "nodes")
+
+agricultural_plots <- lapply(agricultural_graphs, function(x) {
+  if(nrow(x %>%
+          activate(edges) %>%
+          as_tibble()) > 
+     nrow(x %>%
+          activate(nodes) %>%
+          as_tibble())) {
+    plot_name <- paste0("Grid: ", unique(as_tibble(x)$Grid), ", Visit: ", unique(as_tibble(x)$Visit))
+    
+    plot <- ggraph(x, layout = "fr") +
+      geom_edge_link() +
+      geom_node_point(aes(colour = Species), size = 3) +
+      scale_colour_manual(values = species_palette, drop = FALSE) +
+      labs(title = plot_name) +
+      theme_graph(title_size = 10,
+                  foreground = "black")
+    
+    return(plot)
+  } else {
+    plot_name <- paste0("Grid: ", unique(as_tibble(x)$Grid), ", Visit: ", unique(as_tibble(x)$Visit))
+    
+    plot <- ggraph(x, layout = "fr") +
+      geom_node_point(aes(colour = Species), size = 3) +
+      scale_colour_manual(values = species_palette, drop = FALSE) +
+      labs(title = plot_name) +
+      theme_graph(title_size = 10,
+                  foreground = "black")
+    
+    return(plot)
+  }
 })
 
-for(i in 1:length(graph_village)) {
-  
-  baiama <- ggraph(graph_village[[i]]$baiama, layout = "fr") +
-    geom_edge_link() +
-    geom_node_point(aes(colour = Species), size = 2) +
-    theme_graph(title_size = 12) +
-    scale_colour_manual(values = species_palette, drop = FALSE) +
-    labs(title = paste0(str_to_sentence(str_replace_all(names(graph_landuse[i]), "_", " ")), " - Baiama")) +
-    theme(plot.background = element_rect(fill = "gray86"), panel.background = element_rect(fill = "white"))
-  
-  lalehun <- ggraph(graph_village[[i]]$lalehun, layout = "fr") +
-    geom_edge_link() +
-    geom_node_point(aes(colour = Species), size = 2) +
-    theme_graph(title_size = 12) +
-    scale_colour_manual(values = species_palette, drop = FALSE) +
-    labs(title = paste0(str_to_sentence(str_replace_all(names(graph_landuse[i]), "_", " ")), " - Lalehun")) +
-    theme(plot.background = element_rect(fill = "gray86"), panel.background = element_rect(fill = "white"))
-  
-  lambayama <- ggraph(graph_village[[i]]$lambayama, layout = "fr") +
-    geom_edge_link() +
-    geom_node_point(aes(colour = Species), size = 2) +
-    theme_graph(title_size = 12) +
-    scale_colour_manual(values = species_palette, drop = FALSE) +
-    labs(title = paste0(str_to_sentence(str_replace_all(names(graph_landuse[i]), "_", " ")), " - Lambayama")) +
-    theme(plot.background = element_rect(fill = "gray86"), panel.background = element_rect(fill = "white"))
-  
-  seilama <- ggraph(graph_village[[i]]$seilama, layout = "fr") +
-    geom_edge_link() +
-    geom_node_point(aes(colour = Species), size = 2) +
-    theme_graph(title_size = 12) +
-    scale_colour_manual(values = species_palette, drop = FALSE) +
-    labs(title = paste0(str_to_sentence(str_replace_all(names(graph_landuse[i]), "_", " ")), " - Seilama")) +
-    theme(plot.background = element_rect(fill = "gray86"), panel.background = element_rect(fill = "white"))
-  
-  legend <- get_legend(baiama +
-                         guides(color = guide_legend(nrow = 1)) +
-                         theme(legend.position = "bottom"))
-  
-  combined_plots <- plot_grid(plotlist = list(baiama + theme(legend.position = "none"), 
-                                              lalehun + theme(legend.position = "none"),
-                                              lambayama + theme(legend.position = "none"),
-                                              seilama + theme(legend.position = "none")),
-                              rel_heights = 0.9)
-  
-  plot_grid(plotlist = list(combined_plots, legend), rel_heights = c(10, 1), ncol = 1)
-}
+baiama_agricultural <- (agricultural_plots[[1]] + agricultural_plots[[2]]) /
+  (agricultural_plots[[3]] + agricultural_plots[[4]]) /
+  (agricultural_plots[[5]] + agricultural_plots[[6]]) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Baiama - Agricultural")
 
+write_rds(x = baiama_agricultural, file = here("report", "plots", "baiama_agriculture.rds"))
+
+write_rds(x = baiama_agricultural, file = here("report", "plots", "baiama_agriculture.rds"))
+
+lalehun_agricultural_1 <- (agricultural_plots[[10]] + agricultural_plots[[11]]  + agricultural_plots[[12]] + agricultural_plots[[13]] + agricultural_plots[[14]])  + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Lalehun - Agricultural 1")
+lalehun_agricultural_2 <- (agricultural_plots[[15]] + agricultural_plots[[16]] + agricultural_plots[[17]] + agricultural_plots[[18]] + agricultural_plots[[19]] + agricultural_plots[[20]])   + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Lalehun - Agricultural 2")
+lalehun_agricultural_3 <- (agricultural_plots[[21]] + agricultural_plots[[22]] + agricultural_plots[[23]] + agricultural_plots[[24]] + agricultural_plots[[25]] + agricultural_plots[[26]])   + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Lalehun - Agricultural 3")
+lalehun_agricultural_4 <- (agricultural_plots[[27]]) /
+  (agricultural_plots[[28]] + agricultural_plots[[29]] + agricultural_plots[[30]] + agricultural_plots[[31]]) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Lalehun - Agricultural 4")
+
+lambayama_agricultural <- (agricultural_plots[[32]] + agricultural_plots[[33]] + agricultural_plots[[34]]) /
+  agricultural_plots[[35]] /
+  (agricultural_plots[[36]] + agricultural_plots[[37]]) + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Lambayama - Agricultural")
+
+seilama_agricultural_1 <- (agricultural_plots[[38]] + agricultural_plots[[39]]  + agricultural_plots[[40]]) /
+  (agricultural_plots[[41]] + agricultural_plots[[42]] + agricultural_plots[[43]])  + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Seilama - Agricultural 1")
+seilama_agricultural_2 <- (agricultural_plots[[44]] + agricultural_plots[[45]] + agricultural_plots[[46]]) /
+  (agricultural_plots[[47]] + agricultural_plots[[48]]) +
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Seilama - Agricultural 2")
+seilama_agricultural_3 <- (agricultural_plots[[49]] + agricultural_plots[[50]] + agricultural_plots[[51]]) /
+  (agricultural_plots[[52]] + agricultural_plots[[53]] + agricultural_plots[[54]])   + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Seilama - Agricultural 3")
+seilama_agricultural_4 <- (agricultural_plots[[55]] + agricultural_plots[[56]] + agricultural_plots[[57]]) /
+  (agricultural_plots[[58]] + agricultural_plots[[59]] + agricultural_plots[[60]])   + 
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Seilama - Agricultural 4")
+
+# Forest
+forest_graphs <- as_tbl_graph(graph_landuse$secondary_forest) %>%
+  activate(nodes) %>%
+  mutate(Species = factor(Species)) %>%
+  to_split(Village, Grid, Visit, split_by = "nodes")
+
+forest_plots <- lapply(forest_graphs, function(x) {
+  if(nrow(x %>%
+          activate(edges) %>%
+          as_tibble()) > 
+     nrow(x %>%
+          activate(nodes) %>%
+          as_tibble())) {
+    plot_name <- paste0("Grid: ", unique(as_tibble(x)$Grid), ", Visit: ", unique(as_tibble(x)$Visit))
+    
+    plot <- ggraph(x, layout = "fr") +
+      geom_edge_link() +
+      geom_node_point(aes(colour = Species), size = 3) +
+      scale_colour_manual(values = species_palette, drop = FALSE) +
+      labs(title = plot_name) +
+      theme_graph(title_size = 10,
+                  foreground = "black")
+    
+    return(plot)
+  } else {
+    plot_name <- paste0("Grid: ", unique(as_tibble(x)$Grid), ", Visit: ", unique(as_tibble(x)$Visit))
+    
+    plot <- ggraph(x, layout = "fr") +
+      geom_node_point(aes(colour = Species), size = 3) +
+      scale_colour_manual(values = species_palette, drop = FALSE) +
+      labs(title = plot_name) +
+      theme_graph(title_size = 10,
+                  foreground = "black")
+    
+    return(plot)
+  }
+})
+
+baiama_forest <- forest_plots[[1]] +
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Baiama - Forest")
+
+lalehun_forest <- forest_plots[[3]] +
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Lalehun - Forest")
+
+seilama_forest <- (forest_plots[[4]] + forest_plots[[5]] + forest_plots[[6]])/
+  (forest_plots[[7]] + forest_plots[[8]]) +
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Seilama - Forest")
+
+# Village
+
+village_graphs <- as_tbl_graph(graph_landuse$village) %>%
+  activate(nodes) %>%
+  mutate(Species = factor(Species)) %>%
+  to_split(Village, Grid, Visit, split_by = "nodes")
+
+village_plots <- lapply(village_graphs, function(x) {
+  if(nrow(x %>%
+          activate(edges) %>%
+          as_tibble()) > 
+     nrow(x %>%
+          activate(nodes) %>%
+          as_tibble())) {
+    plot_name <- paste0("Grid: ", unique(as_tibble(x)$Grid), ", Visit: ", unique(as_tibble(x)$Visit))
+    
+    plot <- ggraph(x, layout = "fr") +
+      geom_edge_link() +
+      geom_node_point(aes(colour = Species), size = 3) +
+      scale_colour_manual(values = species_palette, drop = FALSE) +
+      labs(title = plot_name) +
+      theme_graph(title_size = 10,
+                  foreground = "black")
+    
+    return(plot)
+  } else {
+    plot_name <- paste0("Grid: ", unique(as_tibble(x)$Grid), ", Visit: ", unique(as_tibble(x)$Visit))
+    
+    plot <- ggraph(x, layout = "fr") +
+      geom_node_point(aes(colour = Species), size = 3) +
+      scale_colour_manual(values = species_palette, drop = FALSE) +
+      labs(title = plot_name) +
+      theme_graph(title_size = 10,
+                  foreground = "black")
+    
+    return(plot)
+  }
+})
+
+baiama_village <- (village_plots[[1]] + village_plots[[2]]) +
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Baiama - Village")
+
+lalehun_village <- (village_plots[[3]] + village_plots[[4]] + village_plots[[5]]) /
+  (village_plots[[6]] + village_plots[[7]] + village_plots[[8]]) +
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Lalehun - Village")
+
+lambayama_village <- (village_plots[[9]] + village_plots[[10]]) +
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Lambayama - Village")
+
+seilama_village <- (village_plots[[11]] + village_plots[[12]] + village_plots[[13]]) /
+  (village_plots[[14]] + village_plots[[15]]) +
+  plot_layout(guides = "collect") +
+  plot_annotation(title = "Seilama - Village")
+
+# Describing networks by habitat type
+network_size <- bind_graphs(as_tbl_graph(graph_landuse$agriculture),
+                            as_tbl_graph(graph_landuse$secondary_forest),
+                            as_tbl_graph(graph_landuse$village)) %>%
+  activate(nodes)%>%
+  filter(Village != "Bambawo") %>%
+  mutate(Species = factor(Species)) %>%
+  to_split(Village, Grid, Visit, split_by = "nodes") %>%
+  lapply(., function(x) {
+  x %>% 
+    activate(nodes) %>% 
+    mutate(Individuals = graph_order(),
+           Size = graph_size(),
+           Contacts = unlist(graph_mutual_count()),
+           Clique_size = graph_clique_num(),
+           Number_components = graph_component_count(),
+           Connectedness = graph_adhesion()) %>%
+    as_tibble() %>%
+    distinct(Landuse, Village, Grid, Visit, Individuals, Size, Contacts, Clique_size, Number_components, Connectedness)
+}) %>%
+  do.call(rbind.data.frame, .)
+
+network_summary <- network_size %>%
+  group_by(Landuse, Visit) %>%
+  summarise(mean_individuals = mean(Individuals),
+            sd_individuals = sd(Individuals),
+            mean_contacts = mean(Contacts),
+            sd_contacts = sd(Contacts))
+
+ggplot(network_size) +
+  geom_boxplot(aes(x = Visit, y = Individuals, fill = Landuse))
+
+ggplot(network_size) +
+  geom_boxplot(aes(x = Visit, y = Contacts, fill = Landuse))
+
+# Calculating connectedness
+
+
+
+
+
+
+
+as_tbl_graph(graph_landuse$agriculture) %>%
+  activate(nodes) %>%
+  filter(Village != "Bambawo") %>%
+  group_by(Village, Visit, Grid) %>%
+  mutate(n_individuals = n(),
+         n_contacts = graph_size())
 
 # Networks for positive rodents
 positive_networks <- lapply(graph_landuse, function(x) {

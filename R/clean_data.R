@@ -27,3 +27,10 @@ unique_rodents <- combined_data$ELISA_enriched %>%
                                     is.na(site_habitat) & str_detect(rodent_uid, "SEI") ~ "agriculture"))
 
 write_rds(unique_rodents, here("data", "unique_rodents.rds"))
+
+trap_locations <- trap_data$sites %>%
+  mutate(simple_habitat = case_when(str_detect(site_habitat, "agriculture") ~ "agriculture",
+                                    str_detect(site_habitat, "village") ~ "village",
+                                    str_detect(site_habitat, "forest") ~ "secondary_forest",
+                                    str_detect(site_habitat, "fallow") ~ "agriculture",
+                                    str_detect(habitat_group, "agriculture") ~ "agriculture"))

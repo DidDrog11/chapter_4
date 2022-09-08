@@ -29,3 +29,11 @@ The manuscript or report will be stored in a `report` folder. This will be writt
 1.  Which rodent species in a Lassa fever endemic region display evidence of prior infection with *Lassa mammarenavirus*?
 2.  Is seroprevalence increased in rodent networks containing *Mastomys natalensis*?
 3.  What is the role of diverse or depauparate rodent assemblages on risk an individual rodents risk of prior infection with *Lassa mammarenavirus*?
+
+Trapped an area
+Identified the occurrence of a rodent
+Produced a network of rodents trapped in the same spatial and temporal activity
+Identified the potential contacts of that rodent
+Investigated the difference between landuse types
+Tested these rodents for antibodies
+Described the networks of those with evidence of infection
