@@ -1,0 +1,247 @@
+---
+title: "ERGM Tutorial"
+author:
+  - name: "David Simons"
+    url: https://github.com/diddrog11/rodent_trapping
+    affiliation: The Royal Veterinary College, London, UK
+    affiliation_url: https://www.rvc.ac.uk
+    orcid_id: 0000-0001-9655-1656
+date: "`r Sys.Date()`"
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+---
+
+# Introduction
+
+The tutorial is accessed here - https://statnet.org/Workshops/ergm_tutorial.html
+
+ERGMs are formulated as:
+
+\begin{align*}
+\log({\exp(\theta'g(y))}) = \theta_1g_1(y) + \theta_2g_2(y)+ ... + \theta_pg_p(y)
+\end{align*}
+
+Where:
+  + $y$ is the random variable for the state of the network
+  + $g(y)$ is a vector of model statistics for network y
+  + $\sigma$ is the vector of coefficients for those statistics, and
+  + $k(\sigma)$ represents the quantity in the numerator summed over all possible networks(typically constrained to be all networks with the same node set a $y$)
+
+```{r load-data}
+library(ergm)
+library(here)
+library(tidyverse)
+library(tidygraph)
+library(intergraph)
+library(ggraph)
+
+set.seed(123)
+data(florentine)
+```
+
+# Visualising the network
+
+The data is imported as a `network` object. We can describe the structure of the network and then visualising it.
+
+```{r visualise-network}
+flomarriage
+
+plot(flomarriage, 
+     main="Florentine Marriage", 
+     cex.main=0.8, 
+     label = network.vertex.names(flomarriage)) # Plot the network
+
+```
+
+This displays the edges between all the nodes in the network.
+
+``` {r wealth-network}
+wealth <- flomarriage %v% 'wealth' # %v% references vertex attributes
+wealth
+
+plot(flomarriage, 
+     vertex.cex=wealth/25, 
+     main="Florentine marriage by wealth", cex.main=0.8) # Plot the network with vertex size proportional to wealth
+
+```
+
+We can set the vertex of interest to wealth, here, this is the only vertex property `%v%` is used to reference the vertex. The size of a node is related to the value of wealth.
+
+## Bernoulli (Erdos/Renyi) model
+
+The simplest model, containing only the one term that represents the total number of edges in the network, $\sum{y_{ij}}$ can be accessed by using the ergm-term of `edges`. 
+
+```{r erdo-renyi}
+summary(flomarriage ~ edges)
+
+flomodel.01 <- ergm(flomarriage ~ edges) # Estimate the model 
+summary(flomodel.01)
+
+```
+
+This simple model specifies a single homogenous probability for all ties, captured by the coefficient of the `edges` term. This can be interpreted by returning to the logit form of the ERGM. The log-odds that a tie is present is:
+
+\begin{align*}
+{\sf{logit}(p(y))} &= \sigma * \delta(g(y)) \\
+&= -1.61 * \text{change in the number of ties} \\
+&= -1.61 * 1
+\end{align*}
+
+for every tie, since the addition of any tie to the network always increases the total number by 1. The corresponding probability is obtained by taking the expit, or inverse logit, of $\sigma$:
+
+\begin{align*}
+&= \sf {exp}(-1.61)/(1+ \sf {exp}(-1.61)) \\
+&= 0.167
+\end{align*}
+
+This probability corresponds to the density we observe in the flomarriage network. There are 20 ties and therefore $\binom{16}{2} = (16 \times 15)/2 = 120$ dyads, so the probability of a tie is $20/120 = 0.167$
+
+### Applied to my data
+
+Applied to Seilama Grid 1 Visit 5.
+
+```{r seilama-simple}
+landuse_graph <- read_rds(here("data", "graphs_landuse.rds"))
+
+seilama_nodes <- as_tbl_graph(landuse_graph$agriculture) %>%
+  activate(nodes) %>%
+  filter(Village == "Seilama" &
+           Grid == "1" &
+           Visit == "5")
+
+rodent_graph <- igraph::simplify(as.igraph(seilama_nodes))
+
+rodent_graph <- asNetwork(rodent_graph)
+
+rodent_graph
+
+ggraph(rodent_graph) +
+  geom_edge_link() +
+  geom_node_point(aes(colour = Species))
+     
+```
+The graph has been filtered using `tidygraph` and simplified in `igraph` prior to conversion to a `network` object.
+
+```{r erdo-renyi-rodent}
+
+summary(rodent_graph ~ edges)
+
+rodent.01 <- ergm(rodent_graph ~ edges) # Estimate the model 
+
+summary(rodent.01)
+
+exp(-0.895)/(1 + exp(-0.895))
+```
+The probability of tie is 0.29. This is equivalent to the number of ties 87 divided by the number of dyads $\binom{25}{2} = 300$. 
+
+
+## Triad formation
+
+A term can be added, one that represents clustering. The number of completed triangles in the network. This is a dyad dependent term: the status of any triangle containing dyan $y_{i,j}$ depends on the status of dyads of the $y_{i,k}$ and $y_{j,k}$.  This means that any model containing the ergm-term `triangle` has the proprty that dyads are not probabilistically independent of one another. As a result, `ergm` uses a stochastic MCMC-based algorithm. 
+
+```{r triad-example}
+set.seed(321)
+
+summary(flomarriage ~ edges + triangles)
+
+flomodel.02 <- ergm(flomarriage ~ edges + triangles)
+
+summary(flomodel.02)
+```
+
+This can be interpreted as follows. The conditional log-odds of two nodes having a ties, keeping the rest of the network fixed is.
+
+\begin(align*)
+-1.68 * \text{change in the number of ties} + 0.1603 * \text{change in the number of triangles}
+\end{align}
+
+ + for a tie that will create no triangles, the conditional log-odds is: -1.68
+ + if one triangle: -1.68 + 0.1603 = -1.5197
+ + if two triangles: -1.68 + 2 * 0.204 = -1.272
+ 
+```{r calculating-probabilities}
+
+plogis(coef(flomodel.02)[[1]] + (0:2) * coef(flomodel.02)[[2]])
+
+```
+The three probabilities for these options are therefore:
+  + 0.157
+  + 0.18
+  + 0.204
+
+### Applied to my data
+
+```{r triangles-rodent}
+
+summary(rodent_graph ~ triangles)
+
+rodent.02 <- ergm(rodent_graph ~ triangles)
+
+summary(rodent.02)
+
+```
+This model ` ~ edges + triangles` cannot run for the data, as it is unable to reach the target effective size in the number of iterations alotted. Perhaps as the number of triangles exceeds the number of edges? It has been run for `triangles` which works ok.
+
+## Nodal covariates: effects on mean degree
+
+Wealth appeared to be associated with higher degree. We can use `ergm` to test this. Wealth is a nodal covariate, so we use the ergm-term `nodecov`.
+
+```{r nodal-covariates}
+
+summary(wealth)
+
+summary(flomarriage ~ edges + nodecov("wealth"))
+
+flomodel.03 <- ergm(flomarriage ~ edges + nodecov("wealth"))
+
+summary(flomodel.03)
+
+```
+
+This supports the initial observation. There is a significant positive wealth effect on the probability of a tie. To interpret these coefficients note that the wealth effect operates on both nodes of the dyad. The conditional log-odds of a tie between two nodes is:
+
+\begin{align*}
+-2.59 * \text{change in the number of ties} + 0.01 * \text{the wealth of node 1} + 0.01 * \text{the wealth of node 2} \\
+-2.59 * \text{change in the number of ties} + 0.01 * {the sum of the wealth of the two nodes}
+\end{align*}
+
+  + for a tie between two nodes with minimum wealth, the conditional log-odds is: -2.59 + 0.01 * (3+3) = -2.53
+  + for a tie between two nodes with maximum wealth: -2.59 + 0.01 * (146+146) = 0.33
+  + for a tie between two nodes one with minimum wealth and one with maximum wealth: -2.59 + 0.01 * (146+3) = 0.33
+
+```{r calculating-probabilities-wealth}
+
+plogis(coef(flomodel.03)[[1]] + (coef(flomodel.03)[[2]] * (min(wealth) + min(wealth))))
+plogis(coef(flomodel.03)[[1]] + (coef(flomodel.03)[[2]] * (max(wealth) + max(wealth))))
+plogis(coef(flomodel.03)[[1]] + (coef(flomodel.03)[[2]] * (max(wealth) + min(wealth))))
+```
+
+The corresponding probabilities are therefore 0.07, 0.61 and 0.26.
+
+This model specification does not include a term for homophily by wealth (a term accounting for similarity in wealth of the two end nodes). It only specifies the relation between wealth and mean degree. To specify homophily on wealth the term `absdiff` can be used (see below).
+
+### Applied to my data
+
+My data is not continuous so need to use nodefactor instead of nodecov. By default it will use Crocidura spp. as the reference.
+
+```{r nodal-covariates-rodent}
+
+species <- factor(rodent_graph %v% "Species")
+
+summary(species)
+summary(serostatus)
+
+summary(rodent_graph ~ edges + nodefactor("Species"))
+
+rodent.03 <- ergm(rodent_graph ~ edges + nodefactor("Species"))
+
+summary(rodent.03)
+
+```
+Coefficients are interpreted as:
+  + Probability of Crocidura forming a tie: -1.829 = probability of 0.13
+  + Probability of L. sikapusi forming a tie: -1.829 + -2.1e-16 = probability of 0.13
+  + Probability of M. minutoides forming a tie: -1.829 + 1.072 = probability of 0.32
+  + Probability of Praomys forming a tie: -1.829 + 6.004e-1 = probability of 0.22

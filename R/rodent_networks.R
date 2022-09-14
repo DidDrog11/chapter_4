@@ -334,6 +334,8 @@ graph_landuse <- mapply(X = edgelist,
                         return(g_landuse)
                         })
 
+write_rds(graph_landuse, here("data", "graphs_landuse.rds"))
+
 plot_graphs <- list()
 
 for(i in 1:length(graph_landuse)) {
@@ -434,10 +436,6 @@ baiama_agricultural <- (agricultural_plots[[1]] + agricultural_plots[[2]]) /
   (agricultural_plots[[5]] + agricultural_plots[[6]]) + 
   plot_layout(guides = "collect") +
   plot_annotation(title = "Baiama - Agricultural")
-
-write_rds(x = baiama_agricultural, file = here("report", "plots", "baiama_agriculture.rds"))
-
-write_rds(x = baiama_agricultural, file = here("report", "plots", "baiama_agriculture.rds"))
 
 lalehun_agricultural_1 <- (agricultural_plots[[10]] + agricultural_plots[[11]]  + agricultural_plots[[12]] + agricultural_plots[[13]] + agricultural_plots[[14]])  + 
   plot_layout(guides = "collect") +
@@ -614,18 +612,68 @@ network_summary <- network_size %>%
             sd_contacts = sd(Contacts))
 
 ggplot(network_size) +
-  geom_boxplot(aes(x = Visit, y = Individuals, fill = Landuse))
+  geom_boxplot(aes(x = Visit, y = Individuals, fill = Landuse)) +
+  theme_bw()
 
 ggplot(network_size) +
-  geom_boxplot(aes(x = Visit, y = Contacts, fill = Landuse))
+  geom_boxplot(aes(x = Visit, y = Contacts/Individuals, fill = Landuse)) +
+  theme_bw()
 
 # Calculating connectedness
+node_level_summary <- bind_graphs(as_tbl_graph(graph_landuse$agriculture),
+            as_tbl_graph(graph_landuse$secondary_forest),
+            as_tbl_graph(graph_landuse$village)) %>%
+  activate(nodes)%>%
+  filter(Village != "Bambawo") %>%
+  mutate(Species = factor(Species)) %>%
+  morph(to_simple) %>%
+  mutate(Degree = centrality_degree(),
+         Betweenness = centrality_betweenness(), # need to split into clusters
+         Closeness = centrality_closeness(),
+         Coreness = node_coreness(),
+         Connectivity_impact = node_connectivity_impact()[,1]) %>%
+  unmorph() %>%
+  as_tibble() %>%
+  filter(!is.nan(Closeness))
+
+ggplot(node_level_summary) +
+  geom_boxplot(aes(x = Landuse, y = Degree, fill = Landuse)) +
+  scale_y_continuous(limits = c(0, 13)) +
+  theme_bw()
+
+ggplot(node_level_summary) +
+  geom_boxplot(aes(x = Landuse, y = Coreness, fill = Landuse)) +
+  scale_y_continuous(limits = c(0, 8)) +
+  theme_bw()
+
+node_level_summary %>%
+  group_by(Landuse) %>%
+  summarise(mean_degree = mean(Degree),
+            mean_closeness = mean(Closeness),
+            mean_coreness = mean(Coreness))
 
 
+node_level_summary %>%
+  group_by(Species) %>%
+  summarise(mean_degree = mean(Degree),
+            mean_closeness = mean(Closeness),
+            mean_coreness = mean(Coreness))
 
+ggplot(node_level_summary) +
+  geom_boxplot(aes(x = Species, y = Degree, fill = Species)) +
+  scale_y_continuous(limits = c(0, 13)) +
+  theme_bw()
 
+node_level_summary %>%
+  group_by(Serostatus) %>%
+  summarise(mean_degree = mean(Degree),
+            mean_closeness = mean(Closeness),
+            mean_coreness = mean(Coreness))
 
-
+ggplot(node_level_summary) +
+  geom_boxplot(aes(x = Serostatus, y = Degree, fill = Species)) +
+  scale_y_continuous(limits = c(0, 13)) +
+  theme_bw()
 
 as_tbl_graph(graph_landuse$agriculture) %>%
   activate(nodes) %>%

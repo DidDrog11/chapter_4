@@ -58,15 +58,41 @@ Trapped rodents were sedated with halothane and euthanised prior to obtaining mo
 
 Molecular identification to species was performed on dried blood spots that were stored at -20°C until processing. Genomic DNA was extracted using QIAGEN DNAeasy kits as per the manufacturers instructions [ref]. DNA extracts were amplified using platinum *Taq* polymerase (Invitrogen) and cytochrome B primers. DNA amplification was assessed through gel electrophoreisis with successful amplification products undergoing Sanger sequencing. Obtained sequences were compared using BLAST against NCBI records for rodent cytochrome B.
 
+## How does landuse-, species- and individual-level heterogeneity influence contact networks? (Need to change to my words)
+
+Over a fixed period of time (here 40 days), a particular species pair either will or will not experience a contact sufficient to transmit *Lassa mammarenavirus*. As we consider a binary network of contact or no-contact, we produce a contact vector for the presence of contact between two species of (1 0) and no-contact (0 1). Generally, the $k$th observation is defined by the zero/one vector $d_{k,i,j}$. This vector specifies the presence or absence of contact that a unique pair of individuals of species $i$ and $j$ experienced over the time interval. We use this model to ask how attributes of the species and individuals involved in the interaction and the time period in which it took place affect the probability of a contact. This is done using a Multinomial contact model (Equation 1.)
+
+\begin{align*}
+d_k &\sim {\sf Multinomial}(N_k, p_{contact}, p_{no-contact}) \\
+{\sf log}(\frac{p_{contact}}{p_{no-contact}}) & = X^{1} B^{1}
+\end{align*}
+
+Where $X$ is a matrix of landuse-, species-, individual-level and time-interval covariates. $B$ are vectors giving the effects of these covariates on the log probability of a contact, relative to no contact. $N_k$ is the number of contact modes, here 2 (contact and no-contact), experienced by the $k$th pair of individuals over the time interval. Equation 1. assumes dyadic independence - that the probability of observing a particular edge $k$ is independent of other edges, after accounting for node- and edge-level covariates. 
+
+We defined a contact as whether or not a unique animal pair had a recorded direct contact within a season. Seasons were defined as Dry () and Rainy (). As previous work has shown that rodent populations may migrate between landuse types during different periods of food availability. Contacts were defined as rodents trapped within 15 meters of another rodent, based on trap locations, within a period of 4 trap-nights ($t$). Finally, all individuals that never experienced contact with another rodent were removed as these may include individuals trapped on the extremes of their home range. Sensitivity analysis were performed with these individuals retained. 
+
+We considered a single-mode contact model, direct and indirect contacts were conflated given evidence that the pathogen of interest is transmitted by both means [@safronetz2022]. We fit the following model to the data where all effects are relative to no contact (Equation 2).
+
+\begin{align*}
+d_k &\sim {\sf Multinomial}(N_k, p_{contact}, p_{no-contact}) \\
+{\sf log}(\frac{p_{contact}}{p_{no-contact}})k & = (1 \sf{sp-pair}_k \sf{landuse}_k \sf{sp-pair}_k * \sf{landuse}_k \sf{village}_k \sf{overlap-tn}_k \sf{season}_k)B^d + \alpha_{k,m,i}
+\end{elign*}
+
+The variable $\sf {sp-pair}_k$ is a vector of indicator variables where each element represents a unique pair of species $i$ and $j$. The variable $\sf {landuse}_k$ is a vector of indicator variables where each element represents the landuse category The variable $\sf{sp-pair}_k * \sf{landuse}_k$ allows the effect of sp-pair to vary by landuse. The variable $\sf {overlap-tn}_k$ gives the number of trap nights within a season that that contact between these species was recorded for. The variable $\sf{village}_k$ is a vector of elements where each item represents one of the four villages rodents were trapped in. The variable $\sf{season}_k$ is a vector of elements where each item represents the season. Finally, $\alpha$ are random effects that allow for individual-level differences in contact for individuals $m$ and $n$ respectively.
+
+To identify the role of individual- and species-level heterogeneity on contact networks, we fit the full model and then fit two reduced models in which either species-level heterogeneity (by the sp-pair factor) or individual-level heterogeneity (by the individual-level random effects) were removed. The first model excluded the effect of species-level heterogeneity on contact probability. The second model excluded the effect of individual-level heterogeneity on contact probability.
+
 ## Do rodent contact rates differ by landuse type?
 
 To understand potential contact between individual small mammal species we produce a buffer zone, with a radius of 15m, around each trapped individual. The `sf` package in the R statistical computing language was used for geospatial manipulation and analysis with the `igraph` package used to produce the rodent networks [@pebesma_simple_2018; @r_core_team_r_2021]. To test whether rodent contact rates vary by landuse type we analyse the composition of these networks comparing edge density, betweenness and .... Within these networks we further explore species level measures of degree, closeness and betweenness.
+
+## Do rodent contacts vary by species?
 
 ## *Lassa mammarenavirus* serology
 
 The ELISA was performed using the BLACKBOX® LASV IgG ELISA Kit developed by the Diagnostics Development Laboratory hosted at the Bernhard Nocht Institute for Tropical Medicine [ref]. The protocol is available as Supplementary Material 1. Briefly, 1 µL of whole blood was inactivated by mixing with the provided sample dilution buffer (1:50). Where whole blood was unavailable, blood was extracted from dried blood spots stored on filter paper by incubating with phosphate-buffered saline containing 0.08% Sodium Azide and 0.05% Tween 20. Samples and negative and positive controls were incubated on the provided ELISA plate for 24 hours at 4--8 °C in a wet chamber. Following incubation, the plates were washed with subsequent incubation for one hour with 1:10,000 diluted HRP-labelled streptavidin. A final wash was performed before the addition of 100 µL of 3,3',5,5'-Tetramethylbenzidine (TMB) substrate to all the wells, with incubation for 10 min. The colorimetric reaction was stopped by adding 100µL of a stop solution.
 
-In a deviation from the kit description the optical density (OD) at 450nm and 630nm was measured (as opposed to 450nm and 620nm). The index value was produced from the OD difference (OD_450\_ - OD_630\_) divided by the cut-off values (the mean values of the negative controls + 0.150). Samples were considered positive with index values greater or equal to 1.1, negative results less than or equal to 0.9, and inconclusive results when the index value lay between 0.9 and 1.1. Inconclusive results were repeated as advised by the kit manufacturers.
+In a deviation from the kit description the optical density (OD) at 450nm and 630nm was measured (as opposed to 450nm and 620nm). The index value was produced from the OD difference (OD_450_ - OD_630_) divided by the cut-off values (the mean values of the negative controls + 0.150). Samples were considered positive with index values greater or equal to 1.1, negative results less than or equal to 0.9, and inconclusive results when the index value lay between 0.9 and 1.1. Inconclusive results were repeated as advised by the kit manufacturers.
 
 ## What is the prevalence of antibodies to *Lassa mammarenavirus* in an endemic setting in Sierra Leone?
 

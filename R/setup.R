@@ -2,11 +2,13 @@ if (!require("pacman")) install.packages("pacman")
 
 pkgs =
   c("cowplot",
+    "ergm",
     "flextable",
     "ggforce",
     "ggraph",
     "here",
     "igraph",
+    "intergraph",
     "lubridate",
     "mapview",
     "osmdata",
@@ -14,6 +16,7 @@ pkgs =
     "RColorBrewer",
     "rosm",
     "sf",
+    "statnet",
     "tidygraph",
     "tidyverse"
   )
