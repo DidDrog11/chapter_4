@@ -30,12 +30,15 @@ Where:
   + $k(\sigma)$ represents the quantity in the numerator summed over all possible networks(typically constrained to be all networks with the same node set a $y$)
 
 ```{r load-data}
+library(statnet)
 library(ergm)
 library(here)
 library(tidyverse)
 library(tidygraph)
 library(intergraph)
 library(ggraph)
+library(cowplot)
+source(here("R", "modified_functions.R"))
 
 set.seed(123)
 data(florentine)
@@ -77,7 +80,7 @@ The simplest model, containing only the one term that represents the total numbe
 summary(flomarriage ~ edges)
 
 flomodel.01 <- ergm(flomarriage ~ edges) # Estimate the model 
-summary(flomodel.01)
+summary.ergm.david(flomodel.01)
 
 ```
 
@@ -130,7 +133,7 @@ summary(rodent_graph ~ edges)
 
 rodent.01 <- ergm(rodent_graph ~ edges) # Estimate the model 
 
-summary(rodent.01)
+summary.ergm.david(rodent.01)
 
 exp(-0.895)/(1 + exp(-0.895))
 ```
@@ -148,7 +151,7 @@ summary(flomarriage ~ edges + triangles)
 
 flomodel.02 <- ergm(flomarriage ~ edges + triangles)
 
-summary(flomodel.02)
+summary.ergm.david(flomodel.02)
 ```
 
 This can be interpreted as follows. The conditional log-odds of two nodes having a ties, keeping the rest of the network fixed is.
@@ -179,7 +182,7 @@ summary(rodent_graph ~ triangles)
 
 rodent.02 <- ergm(rodent_graph ~ triangles)
 
-summary(rodent.02)
+summary.ergm.david(rodent.02)
 
 ```
 This model ` ~ edges + triangles` cannot run for the data, as it is unable to reach the target effective size in the number of iterations alotted. Perhaps as the number of triangles exceeds the number of edges? It has been run for `triangles` which works ok.
@@ -196,7 +199,7 @@ summary(flomarriage ~ edges + nodecov("wealth"))
 
 flomodel.03 <- ergm(flomarriage ~ edges + nodecov("wealth"))
 
-summary(flomodel.03)
+summary.ergm.david(flomodel.03)
 
 ```
 
@@ -227,8 +230,8 @@ This model specification does not include a term for homophily by wealth (a term
 My data is not continuous so need to use nodefactor instead of nodecov. By default it will use Crocidura spp. as the reference.
 
 ```{r nodal-covariates-rodent}
-
 species <- factor(rodent_graph %v% "Species")
+serostatus <- factor(rodent_graph %v% "Serostatus")
 
 summary(species)
 summary(serostatus)
@@ -237,7 +240,7 @@ summary(rodent_graph ~ edges + nodefactor("Species"))
 
 rodent.03 <- ergm(rodent_graph ~ edges + nodefactor("Species"))
 
-summary(rodent.03)
+summary.ergm.david(rodent.03)
 
 ```
 Coefficients are interpreted as:
@@ -245,3 +248,622 @@ Coefficients are interpreted as:
   + Probability of L. sikapusi forming a tie: -1.829 + -2.1e-16 = probability of 0.13
   + Probability of M. minutoides forming a tie: -1.829 + 1.072 = probability of 0.32
   + Probability of Praomys forming a tie: -1.829 + 6.004e-1 = probability of 0.22
+  
+# ERGM monograph
+
+## Useful modifications to `ergm` functions
+
+These are functions that exponentiate to produce Odds Ratios by default, they are saved in `R/modified_functions.R`
+
+```{r source-modified}
+source(here("R", "modified_functions.R"))
+
+```
+
+
+## Introduction
+
+Networks may differ from simple random graphs due to the following:
+
+  + Network members do not all have the same propensity to form ties (non-uniform degree distribution). 
+  + Actors with similar characteristics are linked to one another more often than expected by random chance (homophily)
+  + The friend-of-my-friend-is-my-friend property is more common than expected by random chance (transitivity)
+  + Directed networks contain more reciprocal ties than expected at random by chance alone (reciprocity)
+  
+Degree distribution is often skewed right with most network members having few ties and a few individuals having many. Transitivity is represented in undirected networks by complete triad structures. Two other structures in networks can help discern the presence or absence of transitivity: edgewise shared partners (ESP) and dyadwise shared partners (DSP). An ESP is a linked dyad where both members of the dyad also have a link to a third network member. In any given triangle structure there are three ESPs. The distribution of ESP in a network shows how many connected dyads have one shared partner, two or more. Likewise, the DSP distribution shows the number of dyads in the network with one or more shared partners. Observed networks tend to include dyads with more shared partners than random networks include, demonstrating more transitivity and pretransitive structures than would occur by chance. 
+
+The underlying assumption of a simple random graph model is that the ties between network members occur at random and are independent of one another. 
+
+To incorporate higher level conditional dependence the, Geometrically Weighted Degree distribution (GWD), Geometrically Weighted Edgewise Shared Partnerships (GWESP), and Geometrically Weighted Dyadwise Shared Partnerships (GWDSP) can be incorporated into models. The GWD was designed to account for the decreasing degree distribution in observed networks. The statistic multiplies the frequency for each value of degree by a weighting parameter and sums the values. Two things influence the size of the GWD statistic, firstly the proportion of high-degree nodes in the network and a selected value of a decay parameter.
+
+GWESP was developed to capture patterns of transitivity. GWESP accounts for the transitivity associated with clustering. GWDSP accounts for the number of dyads with shared partners as DSP are also found in clusters.
+
+## Building a useful ERGM
+
+National Association of County and City Health Officials (NACCHO) data will be used. Containing data on Local Health Departments (LHDs) structure, finances, leadership and staffing. 
+
+```{r harris-data}
+library(ergmharris)
+library(sna)
+library(tidygraph)
+
+data(lhds)
+lhds_complete <- as_tbl_graph(lhds) %>%
+  activate(nodes) %>%
+  filter(complete.cases(across(.cols = all_of(c("hivscreen", "nutrition", "popmil", "state", "years", "name"))))) %>%
+  asNetwork()
+
+lhds <- lhds_complete
+lhds
+options(max.print = 10)
+summary(lhds)
+options(max.print = 500)
+```
+
+This is a network of 1,283 nodes, that is undirected with 2,708 edges. This network can be visualised with node colour showing LHD attributes. There is some apparent clustering in the network. For example an LHD may be more likely to communicate with an LHD sharing the same state. Similar is apparent with clustering on HIV screening programmes. 
+
+```{r visualise-networks}
+
+plot(lhds, vertex.col = "state", main = "State")
+
+plot(lhds, vertex.col = "hivscreen", main = "HIV Screening Programmes")
+```
+
+In larger networks it may be useful to just try and visualise the largest component of the network rather than the entirety of the network.
+
+```{r subsetting-network}
+# Logical term to determine whether the node is part of the largest component
+lhdscomp <- component.largest(lhds)
+# Filter based on this
+lhdssmall <- lhds[lhdscomp, lhdscomp]
+# Convert this to a network object
+smallnet <- as.network(lhdssmall, directed = FALSE)
+
+# Extract the HIV screening data
+hivscreen <- get.vertex.attribute(lhds, "hivscreen")
+# Turn this into a vector removing those not in the largest component
+subhiv <- as.vector(subset(hivscreen, lhdscomp != "FALSE"))
+# Create a vertex attribute for this vector
+smallnet %v% "hivscreen" <- subhiv
+
+plot(smallnet, vertex.col = "hivscreen", main = "HIV screening in the largest network component")
+```
+
+Vertex size and shape can also be used to convey information. Node size should only be determined by continuous or ordinal variables, nominal variables can be used with colour and shape. Further, network measures can be used to size the nodes, for example degree, the number of links a network member has. 
+```{r adding-degree}
+
+numties <- degree(lhds, gmode = "graph")
+lhds %v% "numties" <- numties
+
+plot(lhds, vertex.col = "hivscreen", vertex.cex = numties/6, main = "HIV screening in entire network, \ndegree is divided by 6 to reduce overlap")
+```
+Network descriptives such as the mean and sd of degree, the distribution of degrees and the distribution of triads are helpful to understand the network. 
+```{r network-metrics}
+list("mean_degree" = mean(degree(lhds, gmode = "graph")),
+     "sd_degree" = sd(degree(lhds, gmode = "graph")),
+     "degree_table" = table(degree(lhds, gmode = "graph")),
+     "triad_table" = triad.census(lhds, mode = "graph"))
+
+```
+Graphic examination of degree, edgewise shared partners (ESP), and dyadwise shared partners (DSP) are useful. The distribution of degree shows many low-degree nodes and a few high-degree nodes compared with a random network of the same size and density.
+
+```{r produce-random-graph}
+
+lhd_degree <- tibble("degree" = degree(lhds, gmode = "graph")) %>%
+  ggplot() +
+  geom_bar(aes(x = degree)) +
+  labs(title = "Distribution of degree (LHD)") +
+  theme_bw()
+
+randomg <- rgraph(1283, 1, tprob = 0.0033, mode = "graph")
+randomnet <- as.network(randomg, directed = FALSE)
+randomnet
+
+random_degree <- tibble("degree" = degree(randomnet, gmode = "graph")) %>%
+  ggplot() +
+  geom_bar(aes(x = degree)) +
+  labs(title = "Distribution of degree (Random)") +
+  theme_bw()
+
+plot_grid(lhd_degree, random_degree)
+
+null_random <- ergm(randomnet ~ edges)
+gof_null_random <- gof(null_random, GOF = ~ degree + distance + espartners + dspartners)
+
+lhdforesp <- ergm(lhds ~ edges)
+gof_lhdforesp <- gof(lhdforesp, GOF = ~ degree + distance + espartners + dspartners)
+
+lhd_dsp <- tibble(name = names(gof_lhdforesp$obs.dspart[2:5]),
+                  dsp = gof_lhdforesp$obs.dspart[2:5]) %>%
+  ggplot() +
+  geom_col(aes(x = name, y = dsp)) +
+  labs(title = "Distribution of DSP1-4 (LHD)") +
+  theme_bw()
+
+random_dsp <- tibble(name = names(gof_null_random$obs.dspart[2:5]),
+                  dsp = gof_null_random$obs.dspart[2:5]) %>%
+  ggplot() +
+  geom_col(aes(x = name, y = dsp)) +
+  labs(title = "Distribution of DSP1-4 (Random)") +
+  theme_bw()
+
+plot_grid(lhd_dsp, random_dsp)  
+
+lhd_esp <- tibble(name = names(gof_lhdforesp$obs.espart[2:5]),
+                  esp = gof_lhdforesp$obs.espart[2:5]) %>%
+  ggplot() +
+  geom_col(aes(x = name, y = esp)) +
+  labs(title = "Distribution of ESP1-4 (LHD)") +
+  theme_bw()
+
+random_esp <- tibble(name = names(gof_null_random$obs.espart[2:5]),
+                  esp = gof_null_random$obs.espart[2:5]) %>%
+  ggplot() +
+  geom_col(aes(x = name, y = esp)) +
+  labs(title = "Distribution of ESP1-4 (Random)") +
+  theme_bw()
+
+plot_grid(lhd_esp, random_esp)  
+```
+Edgewise and Dyyadwise shared partner distributions also differ in the observed and random networks, with the observed LHD network having more network members with multiple DSP and ESP compared with the random network, which shows a large number of nodes with a single shared partner and little else in terms of shared partners.
+
+The network has shown potential clustering, another option for identifying clustering is to examine mixing matrices and correlation coefficients. 
+
+```{r mixing-matrices}
+
+mixingmatrix(lhds, "state")
+mixingmatrix(lhds, "hivscreen")
+mixingmatrix(lhds, "nutrition")
+mixingmatrix(lhds, "years")
+
+```
+
+From the mixing matrices we can see that of the connected dyads 1,812 are connections between two LHDs doing nutrition programming, while 648  include an LHD doing a nutrition programme and on not doing a programme. This demonstrates a propensity for LHDs with similar programmes to be connected (homophily of programming). The HIV mixing matrix shows a similar pattern. The leaders years of experience matrix differs from the others. LHDs with more experienced leaders seem to have more connections with all other experience groups. For example, of the 751 connected dyads including a leader with the lowest experience level 283 (38%) are with an LHD with a leader in the top experience category. In contrast, of the 1,543 connected dyads that include an LHD with a highly experienced leader just 18.3% include an LHD with a low-experience leader. This possibly easier to view as mean number of connections.
+
+```{r median-ties-leadership}
+
+years <- get.vertex.attribute(lhds, "years")
+deg <- degree(lhds)
+
+tibble(years = factor(years, labels = c("1-2", "3-5", "6-10", "10+")),
+       degree = deg) %>%
+  group_by(years) %>%
+  summarise(degree = mean(degree)) %>%
+  drop_na(years) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_point(aes(x = years, y = degree)) +
+  scale_y_continuous(limits = c(0, 10)) +
+  labs(title = "Mean degree by years of experience") +
+  theme_bw()
+
+```
+
+Further examination of node characteristics can be beneficial. For example, for continuous attributes, such as `popmill` it may be useful to examine the correlation between the attribute and degree. Here, the correlation coefficient indicates that, as population increases, the number of connections also increases. It may also be useful to examine the average number of ties for nodes with different attributes.
+
+```{r continuous-attributes}
+popmil <- get.vertex.attribute(lhds, "popmil")
+tibble(degree = degree(lhds),
+       popmil = popmil) %>%
+  cor(.)
+
+
+years <- get.vertex.attribute(lhds, "years")
+nutrition <- get.vertex.attribute(lhds, "nutrition")
+
+table(years, nutrition)
+```
+
+These exploratory tools allow us to identify components that may be useful during the model-building process. First the network shows extensive homophily by state and moderate homophily by program area. Second, LHDs with more experienced leaders have more connections; likewise, LHDs serving larger populations have more connections. Finally, underlying structural features in the LHD network are notably different from those in a random network of the same size and density. Specifically, the degree distribution is non-uniform, including more nodes with low degree and a few nodes with very high degree. There are also more nodes with multiple ESP and DSP in the LHD network compared with the random network, indicating higher rates of transitivity and pretransitivity than expected by chance. The presence of homophily, a non-uniform degree distribution, and transitivity are all consistent with current network theory and modelling strategies.
+
+### Model building
+
+We start with a null model. The null model is a simple random graph model, consisting of a single term representing edges, or ties. 
+
+$$ \text{logit}(P(Y_{ij} = 1|n_\text{actors}, Y^{c}_{ij})) = \theta_{edges}\delta_{edges} $$
+
+Here $\delta_{edges}$ is the change statistic for the edges term, and $\theta_{edges}$ represents the coefficient of the edges term. The null model includes the edges coefficient.
+
+```{r LHD-null}
+summary.ergm.david(null_random)
+```
+
+Using the following equation.
+
+$$ \text{logit}(P(Y_{ij} = 1|n_\text{actors}, Y^{c}_{ij})) = \sum_{k=1}^{\kappa} \theta_k \delta_{z_k(y)}$$
+
+The right hand side equates to $k$ the number of network statistics in the model, $\kappa$ being the total number in the model. $\delta_{z_k(y)}$ represents the change in the network statistic when a tie is added between $i$ and $j$, that is, as $Y_{ij}$ goes from 0 to 1. This d statistic, called the change statistic is key to the interpretation of these $p^*$ models. On the left, the $|$ notation indicates that the probability of $Y_{ij} = 1$ is conditional on the rest of the network, where $Y^{c}_{ij}$ denotes all dyads in the network other than $Y_{ij}$. The $\text{logit}$ transformation allows this to be restructured so the conditional probability of a ties is equivalent to.
+
+$$P(Y_{ij} = 1|n_{actors}, Y^{c}_{ij}) = \text{logistic}(\theta_1 \delta_{z_1(y)} + \theta_2 \delta_{z_2(y)} ...)$$
+
+Using these equations, the probability of a tie in this network can be calculated from the information in the summary. There is a single term, edges. The estimate is the coefficient $(\theta)$ for each term, here -5.71272. Indicating that the density of the network is below 50%, where an edges term of 0 would represent a 50% or 0.5 density. A negative edges coefficient is a typical feature of an observed network. The change statistic (d) represents the change in the statistic of interest when an edge is added. The edges term will always have the same change statistic, $\delta_{ed} = 1$.  Using the logistic regression model approach of
+
+$$\displaystyle \frac{1}{1 + e^{-(\theta_1 X_1)}}$$
+
+The probability of a new tie is estimated using:
+
+$$P(Y_{ij} = 1|n_{actors}, Y^{c}_{ij}) = \displaystyle \frac{1}{1 + e^{-(-5.71272 * 1)}} = 0.003293$$
+
+Producing a probability of a tie being, as expected, the same as the density of the LHD network. Therefore, the null model is a good representation of the observed density of the LHD network,it is unlikely though to be a good representation of other observed network characteristics. We can simulate networks using this model to look for how well the model captures structures (i.e. triangles). 
+
+```{r triangles-distribution}
+
+simtrinull <- simulate(null_random, nsim = 100, monitor = ~ triangles, output = "stats", control = control.simulate.ergm(MCMC.burnin = 1000,
+                                                                                                                          MCMC.interval = 1000),
+                        seed = 123)
+lhds.tri <- summary(lhds ~ triangle)
+
+as.data.frame(simtrinull) %>%
+  ggplot() +
+  geom_bar(aes(x = triangle)) +
+  geom_vline(aes(xintercept = lhds.tri), linetype = "dashed") +
+  labs(x = "Triangles",
+       y = "Number of simulations",
+       title = "Simulated triangles, dashed line is observed triangles") +
+  theme_bw()
+```
+
+Clearly the model does not capture the transitivity of the observed LHD network. A more complex model is thus needed.
+
+### Incorporating node attributes
+
+Descriptive statistics indicated that leader experience and population size may influence the number of ties an LHD has. To examine the influence of these node attributes on the likelihood of a tie, they are added to the model as main effects. Hypothesis testing the main effects of LHD attributes on the likelihood of a connection might be worded as:
+
+  + H0: There is no association between jurisdiction population and the likelihood of an LHD to form ties
+  + H1: There is an association between jurisdiction population and the likelihood of an LHD to form ties
+  
+When adding main effects the appropriate command for the data type must be used. There is a comprehensive list of available `statnet` terms and directions for their use. For the LHD network model, leader experience will be included as a categorical model and jurisdiction as a continuous predictor. In `statnet`, `nodefactor` is used for categorical main effects and continuous main effects use `nodecov`. `nodefactor` adds multiple statistics to the model, each one equal to the number of times a node with the specified attribute is at one end of an edge. The `nodecov` main effect term adds one network statistic to the model that sums the attribute of interest for the two nodes comprising the endpoints of each edge in the network. For example, if edge $ij$ consisted of an LHD with a population of 1.2 million and an LHD with a population of 500,000, the edge would sum to 1.7 million which would be added to the network statistic representing jurisdiction population.
+
+```{r main-effect-model}
+lhds_dat <- lhds
+
+options(max.print = 10)
+summary(lhds_dat)
+options(max.print = 500)
+
+maineffects <- ergm(lhds_dat ~ edges + nodecov("popmil") + nodefactor("years"))
+
+summary.ergm.david(maineffects)
+```
+In the statnet package, the reference group is the first in the list shown in the summary of the network. Here, 1-2 years is the reference with the regerence group omitted from the summary and estimates produced for the other categories. The reference level can be changed within the `ergm` functions using, `nodefactor("years", base = 4)`. The output of the summary function can be modified to meet what is expected when reporting these models.
+
+```{r modifying-summary}
+
+or <- exp(maineffects$coefficients)
+ste <- sqrt(diag(maineffects$covar))
+lci <- exp(maineffects$coefficients - 1.96*ste)
+uci <- exp(maineffects$coefficients + 1.96*ste)
+
+oddsratios <- rbind(round(lci, 4), round(or, 4), round(uci, 4))
+oddsratios <- t(oddsratios)
+colnames(oddsratios) <- c("Lower", "OR", "Upper")
+oddsratios
+
+teststat <- maineffects$coefficients/ste
+teststats <- rbind(round(teststat, 4))
+teststats <- t(teststats)
+colnames(teststats) <- c("Wald")
+teststats
+```
+
+According to the main effects model, LHDs with leaders who have 3-5 years of experience are 1.17 times more likely to form a tie with a given LHD compared to LHDs with leaders with 1-2 years of experience. Similarly, leaders with 10 years of experience are 1.4 times more likely to connected to a given LHD compared to those with 1-2 years of experience.
+
+Further information is produced within the `ergm` model which can be viewed using `names()`, with explanations from `help(ergm)`.
+
+```{r model-contents}
+names(maineffects)
+```
+
+Based on the main effects model, the null hypothesis is rejected in favour of the alternate hypothesis. There is a significant association between the likelihood of formaing a tie and LHD jurisdiction population. For every additional 1 million people, the likelihood of forming a tie increases 1.22 times, all else held constant (OR = 1.22, 95% C.I. = 1.19-1.25).
+
+### Predicting probabilities
+
+As with the null model, the main effects model can be used to predict the probability of a new tie formation between any two network members. Because attributes of the network members are now included in the model, the predicted probability of a tie can now be calculated for network members with specified characteristics. For main effects predictors, the change statistic for each term is relatively straightforward. If the predictor is categorical, the value of the change statistic is 0, 1, or 2. If neither of the members in the dyad has a characteristic of interest is is 0. A value of 1 indicates that one of the nodes in the dyad has the characteristic, a 2 indicates that both nodes in the dyad have this characteristic. In the LHD network, for a link between two LHDs with highly experienced leaders, the coefficient for `nodefactor.years.3` would be multiplied by the change statistic of 2 to represent two LHDs with this characteristic; for a link between an LHD with a very experience leader and one with a new leader, the `nodefactor.years.3` coefficient would be multiplied by 1 to represent the one LHD with the experienced leader; and so on. The $\delta$ corresponding to a categorical node attribute may be summarised as follows:
+
+$$
+\delta_{cat} = \text{2 if nodes } i \text{ and } j \text{ have the characteristic} \\
+\delta_{cat} = \text{1 if nodes } i \text{ or } j \text{ have the characteristic} \\
+\delta_{cat} = \text{0 if neither nodes } i \text{ nor } j \text{ have the characteristic} \\
+$$
+
+For continuous predictors, $\delta$ represents the sum of the characteristic for the two LHD leaders in the dyad. In the case of the LHD network, jurisdiction population is a continuous predictor, so if one LHD had 1 million and the other .5 million, the $\delta_{popmil}$ would be $1 + 0.5 = 1.5$. To find the predicted probability of a tie between:
+
+  1. An LHD in a jurisdiction with 2 million people with a leader who had been there 7 years (years = 2). And.
+  2. An LHD in a jurisdiction with 100,000 people with a leader who had been there 1 year (years = 0).
+  
+The coefficients would be multiplied by the change statistics for each term.
+
+$$
+P(Y_{ij} = 1|n_{actors}, Y^{c}_{ij}) = \text{logistic}(\theta_{edges}\delta_{edges} + \theta_{popmil}\delta_{popmil} + \theta_{\text3-5 years}\delta_{\text{3-5 years}} + \theta_{\text{6-10 years}}\delta_{\text{6-10 years}} + \theta_{\text{>10 years}}\delta_{\text{>10 years}}) \\
+P(Y_{ij} = 1|n_{actors}, Y^{c}_{ij}) = \text{logistic}(-6.23*\delta_{edges} + .20*\delta_{popmil} + 0.34*\delta_{\text{6-10 years}}) \\
+P(Y_{ij} = 1|n_{actors}, Y^{c}_{ij}) = \text{logistic}(-6.84*1 + 0.20*2.1 + 0.34*1) \\
+P(Y_{ij} = 1|n_{actors}, Y^{c}_{ij}) = \text{logistic}(-6.08) = \frac{1}{1 + e^{-(-6.08)}} = 0.0023
+$$
+
+The probability of a tie between these two LHDs with these characteristics is 0.0023 or 0.23%. While this may seem low, the density of the network was 0.0033, indicating that only 0.33% of possible linkages exist, the likelihood of this particular connection is therefore lower than might be expected.
+
+### Adding interaction terms
+
+Interaction terms for nodal attributes account for the attributes of both members of a dyad. The most commonly used interaction terms may be those accounting for homophily and heterophily. Interaction terms continue to treat each dyad as independent; models including interaction terms continue to be dyadic independence models. Dyadic independence models assume that each dyad is independent of all other dyads in the model, so the likelihood of a link between A and B would be considered independent from the likelihood of C and B, despite B being in both dyads.
+
+Based on the exploratory analysis, LHDs appear to form more connections with other LHDs in the same state and conducting the same programs. That is, there seems to be some homophily of state and programming in connected dyads across the LHD network. Interaction terms for these attributes can be used to test this hypothesis in a new model.
+
+```{r adding-interactions}
+
+homophilymodel <- ergm(lhds_complete ~ edges + nodecov("popmil") + nodefactor("years") + nodematch("hivscreen") + nodematch("nutrition") + nodematch("state"))
+
+summary.ergm.david(homophilymodel)
+```
+The model shows significant positive coefficients for state and programming homophily in the network. That is, two LHDs in the same state are more likely to be connected, as are two LHDs conducting the same programming. For this example main effects for programming are not entered as each LHD only has two possible values for these, both cannot be entered due to the limited degrees of freedom available.
+
+During the exploratory analyses there was an indication that program homophily was different for LHDs conducting the program compared to those not conducting the program. LHDs were more likely to have contact with other LHDs conducting the same programs, but the converse was not necessarily the case. Homophily can be estimated for each level of a categorical variable; this is called differential homophily. By specifying differential homophily for programs, homophily terms will be included seperately for conducting and not conducting the program. Differential homophily is shown by the use of `diff = TRUE` following the name of the attribute in a `nodematch()` term. 
+
+```{r including-differential-homophily}
+
+diffhomophily <- ergm(lhds_complete ~ edges + nodecov("popmil") + nodefactor("years") + nodematch("hivscreen", diff = TRUE) + nodematch("nutrition", diff = TRUE) + nodematch("state"))
+
+summary.ergm.david(diffhomophily)
+
+```
+
+The output shows the category for each homophily term. The model including differential homophily demonstrates a significant increase in the likelihood of a tie between two LHDs conducting the specified programming, but not between two LHDs that are both not conducting the programming. It may be helpful to keep only the terms for program homophily when the LHDs are both conducting the program and to drop homophily terms for LHDs not conducting programming. To do this, the terms to keep can be specified in the `nodematch()` command. In this case not doing a program is coded as "N" and so comes first, the first homophily term estimated will be two LHDs not doing the program (N-N), with two doing the program (Y-Y) next. To keep only the homophily term for two LHDs both conducting programs `keep = 2` can be added to the `nodematch()` term. 
+
+```{r modify-homophily}
+
+diffhomophily2 <- ergm(lhds_complete ~ edges + nodecov("popmil") + nodefactor("years") + nodematch("hivscreen", diff = TRUE, keep = 2) + nodematch("nutrition", diff = TRUE, keep = 2) + nodematch("state"))
+
+summary.ergm.david(diffhomophily2)
+
+```
+
+Homophily and differential homophily change statistics are similar to main effects change statistics, although since the unit of interest is now the dyad, there are only two possible values. The change statistics can be denoted as follows:
+
+$$
+\delta_\text{hom} = 1 \text{ if } i \text{ and } j \text{ have the same value for a categorical covariate} \\
+\delta_\text{hom} = 0 \text{ otherwise}
+$$
+
+$$
+\delta_\text{diff} = 1 \text{ if } i \text{ and } j \text{ have the same value for a certain category of a categorical covariate} \\
+\delta_\text{diff} = 0 \text{ otherwise}
+$$
+
+Calculating the probability of connection between two LHDs can demonstrate the use of dyad-level terms. In addition to each LHD having its own characteristics for leader experience and jurisdiction population, the two LHDs in this dyad may match on state and nutrition programming but may not match on HIV screeening. There are 10 terms in this model:
+
+  1. 100,000 constituents, leader with 1 year of experience, no HIV screening, nutrition programming, in Missouri
+  2. 2,000,000 constituents, leader with 7 years of experience, HIV screening, nutrition programming, in Missouri
+
+$$
+P(Y_{ij} = 1|n_{actors}, Y^{c}_{ij}) = \text{logistic}(\theta_{edges}\delta_{edges} + \theta_{popmil}\delta_{popmil} + \theta_{\text3-5 years}\delta_{\text{3-5 years}} + \theta_{\text{6-10 years}}\delta_{\text{6-10 years}} + \theta_{\text{>10 years}}\delta_{\text{>10 years}} + \theta_\text{HIV hom}\delta_\text{HIV hom} + \theta_\text{Nut hom}\delta_\text{Nut hom} + \theta_\text{State hom}\delta_\text{State hom}) \\
+P(Y_{ij} = 1|n_{actors}, Y^{c}_{ij}) = \text{logistic}(-9.51*\delta_{edges} + 0.34*\delta_{popmil} + 0.34*\delta_{\text{6-10 years}} + 0.22*\delta_\text{Nut hom} + 6.30*\delta_\text{State hom}) \\
+P(Y_{ij} = 1|n_{actors}, Y^{c}_{ij}) = \text{logistic}(-9.51*1 + 0.34*2.1 + 0.34*1 + 0.22*1 + 6.30*1) \\
+P(Y_{ij} = 1|n_{actors}, Y^{c}_{ij}) = \text{logistic}(-1.936) = \frac{1}{1 + e^{-(-1.936)}} = 0.144
+$$
+
+This probability is much greater than the probability calculated with the main effects model, primarily due to the large coefficient for being in the same state. Although many of the predictors are statistically significant, it is important to systematically examine how well the estimated model captures the observed network structure.
+
+### Model fit
+
+The simplest approach is to compare statistical measure of log-likelihood and related measures of deviance, the AIC or the BIC. Log-likelihood is calculated by summing the differences between the predicted probability of $Y_{ij}$ and the observed values of $Y_{ij}$.
+
+$$
+\text{log-likelihood} = \sum_{i = 1}^{N}[Y_{ij} \text{ln}|(P(Y_{ij})) + (1-Y_{ij})ln(1-P(Y_{ij}))]
+$$
+
+The LL sums the product of the differences between the predicted probability of a tie for each dyad and the actual observed presence or absence of a tie in each dyad. For example, consider a situation where there was an existing connection ($Y_{ij} = 1$) between the two LHDs. The differential homophily model estimated a .23% chance of these two being connected. If a tie existed between these two in the observed network, the contribution of this dyad to the log-likelihood score would be:
+
+$$
+Y_{ij}\text{ln}(P(Y_{ij})) + (1-Y_{ij})\text{ln}(1-P(Y_{ij})) \\
+1 * \text{ln}(0.0023) + (1-1) * \text{ln}(1-0.0023) = -6.07
+$$
+
+If there were no tie ($Y_{ij} = 0$) the contribution of this dyad to the overall log-likelihood score would be:
+
+$$
+1 * \text{ln}(0.0005) + (1-0) * \text{ln}(1-0.0005) = -0.0023
+$$
+
+Because the predicted probability of a tie between these two was very low (0.23%), the magnitude of the contribution to the log-likelihood score in the event that they were actually connected was much greater than the magnitude for no connections. The log-likelihood, therefore, grows in magnitude when the predicted probability is far from the observed value; the worse the predicted values are, the larger the magnitude of the log-likelihood. In quantifying the lack of fit, the LL is similar to the residual sum of squares in linear regression. The LL is often negative, making comparisons intuitively more difficult. To combat this the deviance is often used instead. This is the LL multiplied by -2, typically resulting in a positive value. 
+
+The deviance of a larger model can be compared with the deviance of a smaller nested model to determine whether the larger modes is statistically significantly better in terms of fit. The difference between two deviance scores for nested models follows a chi-squared distribution with degrees of freedom equal to the difference in the number of parameters in the two models. In this case the main effects model has a deviance of 1,103,927 with 5 DF, the differential homophily model has a deviance of 1,120,635 with 10 DF (**This deviance is no longer in the model summary**). The difference 16,708 and 5 DF is significant, adding homophily terms to the model significantly improved model fit.
+
+AIC and BIC are two additional measures of fit of a model. These penalise models with more parameters that do not explain enough additional information to be considered a better fit. They are more flexible than deviance since they can be used to compare non-nested models. Based on these we see that the second homophily model had a lower BIC but higher AIC than the first homophily model, suggesting that these models are both fair. So far the models used meet the assumption of independence for dyads so these metrics are still useful. Once models assuming dyadic or other dependencies are developed simulation-based assessments of model fit should be used instead.
+
+### Simulation based assessment
+
+```{r simulation-assessment}
+
+nullsim <- simulate(null_random, verbose = TRUE, seed = 5)
+mainsim <- simulate(maineffects, verbose = TRUE, seed = 5)
+homsim <- simulate(homophilymodel, verbose = TRUE, seed = 5)
+diffsim <- simulate(diffhomophily, verbose = TRUE, seed = 5)
+diff2sim <- simulate(diffhomophily2, verbose = TRUE, seed = 5)
+
+bind_rows(summary(lhds ~ edges + degree(0:5) + triangle),
+                    summary(nullsim ~ edges + degree(0:5) + triangle),
+                    summary(mainsim ~ edges + degree(0:5) + triangle),
+                    summary(homsim ~ edges + degree(0:5) + triangle),
+                    summary(diffsim ~ edges + degree(0:5) + triangle),
+                    summary(diff2sim ~ edges + degree(0:5) + triangle)) %>%
+  mutate(names = c("lhds", "null", "main effects", "homophily", "diff homophily", "diff homophily 2")) %>%
+  select(names, edges:triangle)
+
+```
+
+There remain differences between the simulated networks and the observed, for example, they all have fewer isolates and fewer triangles than the observed LHD network. The models are however, more closely approximating the observed network, for example, there is no triangle term in the models but the number of triangles more closely matches the observed network at each iteraction.
+
+Increasing the number of simulations such as the one used for Table 3.1 can provide additional insight into model fit. Simulating 10 networks from a model allows comparison of average network statistics from simulations with network statistics from the observed network. 
+
+```{r simulating-networks}
+
+diff2.sim <- simulate(diffhomophily2, control = control.simulate.ergm(MCMC.burnin = 1000, MCMC.interval = 1000), nsim = 10)
+summary(diff2.sim)
+```
+
+The simulated netowrks take a range of values for each component. For example, `nodecov.popmil` which can be compared to the observed `r summary(lhds ~ nodecov("popmil")0` = 1,286, this falls in the range of 1,173-1,315 for the simulated networks.
+
+A comparison of how well the main effects and second differential homophily models capture the transitivity in the LHD network can be examined by comparing the observed number of triangles in the network with the distribution of the number of triangles in 100 simulated networks based on the main effects model and 100 simulated networks based on the second differential homophily model.
+
+```{r comparing-main-effects}
+simtri <- simulate(maineffects, nsim = 100, monitor = ~ triangles, output = "stats", control = control.simulate.ergm(MCMC.burnin = 1000, MCMC.interval = 1000), seed = 1)
+simtri2 <- simulate(diffhomophily2, nsim = 100, monitor = ~ triangles, output = "stats", control = control.simulate.ergm(MCMC.burnin = 1000, MCMC.interval = 1000), seed = 1)
+
+lhds.tri <- summary(lhds ~ triangle)
+
+tibble(model = c(rep("Main effects", length(simtri[, 6])), rep("Differential homophily", length(simtri2[, 9]))),
+       triangles = c(simtri[, 6], simtri2[, 9]),
+       number_sim = c(1:length(simtri[, 6]), 1:length(simtri2[, 9]))) %>%
+  ggplot() +
+  geom_histogram(aes(x = triangles)) +
+  geom_vline(xintercept = unname(lhds.tri), linetype = "dashed") +
+  facet_grid(~ model) +
+  theme_bw()
+```
+
+Very few of the simulated networks from the main effects model included more than 100 triangles. All simulated networks based on the second differential homophily model included 500 or more triangles, which was an improvement over the main effects model but less than the observed modek. This indicates that transitivity in the LHD network is not well represented by either model.
+
+Model simulations built into the goodness-of-fit procedures can compare other network characteristics for simulated networks and the observed network. The results of goodness-of-fit can be assessed in two ways. First, observed frequencies for each network statistic can be compared with frequencies in the simulated models.
+
+```{r goodness-of-fit-sim}
+
+diff2_gof <- gof(diffhomophily2, GOF = ~ degree + espartners + dspartners, verbose = TRUE, control = control.gof.ergm(MCMC.burnin = 10000, MCMC.interval = 10000, seed = 567))
+diff2_gof
+```
+
+These comparisons include 5 columns of information: observations, min, mean, max and MC p value. Obs column shows the number of nodes in the observed network with the value listed in the first column. Min, mean and max shows the values across the simulated networks. The MC p value column is the proportion of the simulated values of the statistic that are at least as extreme as the observed value. Large values of the MC p value are indicators that the simulated networks are similar to the observed network on the characteristic of interest, i.e. not significantly different. Low values effectively indicate that the model is not fitting the data well. The poor fit of the simulations for the dsp and esp is consistent with the lack of triangles in the simulated networks compared with the observed network. 
+
+```{r plot-gof}
+plot(diff2_gof, cex.lab = 1.5, cex.axis = 1.5) 
+plot(diff2_gof, cex.lab = 1.5, cex.axis = 1.5, plotlogodds = T ) 
+
+```
+
+In these figures the fit is easier to discern in the log-odds plots, these will be used for the remaining goodness-of-fit plots. The thick black line represents the observed LHD network, the grey lines show the 95% confidence interval of the simulated network measures.
+
+Although the second differential homophily model has so far demonstrated better fit than the main effects model it was not generally a great fit. This is common with dyadic independence models. Terms accounting for underlying distributions and complex dependencies may aid in improving model fit.
+
+### Adding dependence terms
+
+To account for complex dependencies in an observed network three terms can be used; Geometrically weighted degree (GWD), geometrically weighted edgewise shared partnerships (GWESP) and geometrically weighted dyadwise shared partnerships (GWDSP). These can be used to estimate dependence models. MLE is computationally prohibitive for dyadic dependence models and thus MCMC paramter estimation is used to calculate an approximate log-likelihood. By default, maximum pseudolikelihood is used to determine stating values, these are "toggled" at the dyad level until the specified MCMC chain length is reached.
+
+If a network model exhibits signs of degeneracy, increasing the value of burn-in, chain length and interval can help. These models can take some time.
+
+```{r selecting-alpha}
+if(!file.exists(here("ergm_tutorial_data", "gwmodel5.rds"))) {
+gwmodel1 <- ergm(lhds ~ edges + nodefactor("years") + nodecov("popmil") + nodematch("hivscreen", diff = TRUE, keep = 2) + nodematch("nutrition", diff = TRUE, keep = 2) + nodematch("state") + gwdegree(0.1, TRUE) + gwesp(0.1, TRUE) + gwdsp(0.1, TRUE), control = control.ergm(MCMC.samplesize = 100000, MCMC.burnin = 1000000, MCMC.interval = 1000, seed = 657), eval.loglik = TRUE, verbose = TRUE)
+
+write_rds(gwmodel1, here("ergm_tutorial_data", "gwmodel1.rds"))
+
+gwmodel2 <- ergm(lhds ~ edges + nodefactor("years") + nodecov("popmil") + nodematch("hivscreen", diff = TRUE, keep = 2) + nodematch("nutrition", diff = TRUE, keep = 2) + nodematch("state") + gwdegree(0.4, TRUE) + gwesp(0.4, TRUE) + gwdsp(0.4, TRUE), control = control.ergm(MCMC.samplesize = 100000, MCMC.burnin = 1000000, MCMC.interval = 1000, seed = 657), eval.loglik = TRUE, verbose = TRUE)
+
+write_rds(gwmodel2, here("ergm_tutorial_data", "gwmodel2.rds"))
+
+gwmodel3 <- ergm(lhds ~ edges + nodefactor("years") + nodecov("popmil") + nodematch("hivscreen", diff = TRUE, keep = 2) + nodematch("nutrition", diff = TRUE, keep = 2) + nodematch("state") + gwdegree(0.6, TRUE) + gwesp(0.6, TRUE) + gwdsp(0.6, TRUE), control = control.ergm(MCMC.samplesize = 100000, MCMC.burnin = 1000000, MCMC.interval = 1000, seed = 657), eval.loglik = TRUE, verbose = TRUE)
+
+write_rds(gwmodel3, here("ergm_tutorial_data", "gwmodel3.rds"))
+
+gwmodel4 <- ergm(lhds ~ edges + nodefactor("years") + nodecov("popmil") + nodematch("hivscreen", diff = TRUE, keep = 2) + nodematch("nutrition", diff = TRUE, keep = 2) + nodematch("state") + gwdegree(0.8, TRUE) + gwesp(0.8, TRUE) + gwdsp(0.8, TRUE), control = control.ergm(MCMC.samplesize = 100000, MCMC.burnin = 1000000, MCMC.interval = 1000, seed = 657), eval.loglik = TRUE, verbose = TRUE)
+
+write_rds(gwmodel4, here("ergm_tutorial_data", "gwmodel4.rds"))
+
+gwmodel5 <- ergm(lhds ~ edges + nodefactor("years") + nodecov("popmil") + nodematch("hivscreen", diff = TRUE, keep = 2) + nodematch("nutrition", diff = TRUE, keep = 2) + nodematch("state") + gwdegree(1, TRUE) + gwesp(1, TRUE) + gwdsp(1, TRUE), control = control.ergm(MCMC.samplesize = 100000, MCMC.burnin = 1000000, MCMC.interval = 1000, seed = 657), eval.loglik = TRUE, verbose = TRUE)
+
+write_rds(gwmodel5, here("ergm_tutorial_data", "gwmodel5.rds"))
+
+} else {
+  
+  gwmodel1 <- read_rds(here("ergm_tutorial_data", "gwmodel1.rds"))
+  gwmodel2 <- read_rds(here("ergm_tutorial_data", "gwmodel2.rds"))
+  gwmodel3 <- read_rds(here("ergm_tutorial_data", "gwmodel3.rds"))
+  gwmodel4 <- read_rds(here("ergm_tutorial_data", "gwmodel4.rds"))
+  gwmodel5 <- read_rds(here("ergm_tutorial_data", "gwmodel5.rds"))
+  
+}
+
+summary.ergm.david(gwmodel1)
+summary.ergm.david(gwmodel2)
+summary.ergm.david(gwmodel3)
+summary.ergm.david(gwmodel4)
+summary.ergm.david(gwmodel5)
+```
+These models have taken ~ 2 hours each to run so only values of .1, 0.4, 0.6, 0.8 and 1 for $\alpha$ have been run, based on the book and improvement in AIC and BIC the best fitting model was when $\alpha = 1$. The dependence model includes positive significant coefficients, indicating an increased likelihood of a tie for state homophily, program homophily, jurisdiction population, years of leader experience, GWD and GWESP. A positive and significant coefficient for a geometric term indicates that, given the distribution of degree, ESP, or DSP in the observed network, the likelihood of a between any two given LHDs is greeater than would happen by chance, all else held constant. 
+
+### MCMC model diagnostics
+
+Model diagnostics can help determine whether the estimating algorithm has converged or if there are degeneracy problems. The first strategy is to examine the changes in log-likelihood during the iterations, these are printed as the estimation is proceeding. The amount the log-likelihood improves is an indicator of how far the iterations were from the starting values. Large numbers indicate the starting values for the estimation were off. The algorithm stops if the changes in LL are greater than 20 for any iteration which may indicate a degenerate model or a model with starting values that are very far from the final estimates. Graphical diagnostics of the MCMC model are available for the final iteration using `mcmc.diagnostics()`.
+
+```{r mcmc-diagnostics}
+gc()
+mcmc.diagnostics(gwmodel5)
+```
+
+If the model has converged, these graphs should show each statistic varying stochastically around a mean of 0. 0 represents the value of the statistic in the observed data. 
+
+### Curved exponential family model
+
+Rather than selecting an $\alpha$ *a priori*, the $\alpha$ resulting in the best-fitting model can be estimated during model estimation. Models that the \alpha, rather than specifying it *a priori*, are called curved exponential family models (CEF). The estimated \alpha values for the geometric terms in CEF model are shown after the corresponding geometric term. 
+
+```{r cef-model}
+
+# cefmodel <- ergm(lhds ~ edges + nodefactor("years") + nodecov("popmil") + nodematch("hivscreen", diff = TRUE, keep = 2) + nodematch("nutrition", diff = TRUE, keep = 2) + nodematch("state") + gwdegree(1, FALSE) + gwesp(1, FALSE) + gwdsp(1, FALSE), control = control.ergm(MCMC.samplesize = 100000, MCMC.burnin = 1000000, MCMC.interval = 1000, seed = 657), eval.loglik = TRUE, verbose = TRUE)
+# summary.ergm.david(cefmodel)
+# 
+# mcmc.diagnostics(cefmodel)
+
+```
+
+We can compare the network measures for all of these models.
+
+```{r model-comparison}
+nullsim <- simulate(null_random, verbose = TRUE, seed = 5) 
+mainsim <- simulate(maineffects, verbose = TRUE, seed = 5) 
+homsim <- simulate(homophilymodel, verbose = TRUE, seed = 5) 
+diffsim <- simulate(diffhomophily, verbose = TRUE, seed = 5) 
+diffsim2 <- simulate(diffhomophily2, verbose = TRUE, seed = 5) 
+gwsim <- simulate(gwmodel5, verbose = TRUE, seed = 5) 
+#cefsim <- simulate(cefmodel, verbose = TRUE, seed = 5) 
+
+rowgof <- rbind(summary(lhds ~ edges + degree(0:5) + triangle),
+ summary(nullsim ~ edges + degree(0:5) + triangle), 
+ summary(mainsim ~ edges + degree(0:5) + triangle), 
+ summary(homsim ~ edges + degree(0:5) + triangle), 
+ summary(diffsim ~ edges + degree(0:5) + triangle), 
+ summary(diffsim2 ~ edges + degree(0:5) + triangle), 
+ summary(gwsim ~ edges + degree(0:5) + triangle)
+ #summary(cefsim ~ edges + degree(0:5) + triangle) 
+ ) 
+rownames(rowgof) <- c("LHD", "Null","Main effects","Homophily","Diff 
+homophily", "Diff homophily 2", "Dependence") 
+rowgof
+```
+
+The network simulations show several differences in model fit, the less complex models show an important lack of triangles. The CEF model appeared to come the closes to capturing triangles, while the three dyadic independent models were best at capturing the total edges in the network. The second differential model was best at capturing the degree distributions. While these results suggest that there is not a single best model to capture all characteristics of the network, this is just one simulation from each model and should not be the only measure of fit examined.
+
+```{r triangles-cef}
+simtri0 <- simulate(diffhomophily2, nsim = 100, monitor= ~ triangles, report = "stats", control=control.simulate.ergm(MCMC.burnin = 1000, MCMC.interval = 1000), seed = 1) 
+
+simtri1 <- simulate(gwmodel5, nsim = 100, monitor= ~ triangles, report = "stats", control=control.simulate.ergm(MCMC.burnin = 1000, MCMC.interval = 1000), seed = 1)
+
+# simtri2 <- simulate(cefmodel, nsim = 100, monitor= ~ triangles, report = "stats", control=control.simulate.ergm(MCMC.burnin = 1000, MCMC.interval = 1000), seed = 1)
+
+
+```
+
+In 100 simulations, the number of triangles is understimated in networks based on the differential homophily, dependence and CEF models, where most of the simulated networks fall to the left of the observed number of triangles. However, the simulations from the dependence and CEF models were closer to capturing the number of triangles in the observed network, with the CEF model appearing to be the most consistently close to the observed value. 
+
+We can reproduce the other goodness of fit plots produced above.
+
+```{r gof-cef}
+gwmodel_gof <- gof(gwmodel5, GOF = ~ degree + espartners + dspartners, control = control.gof.ergm(MCMC.burnin = 10000, MCMC.interval = 10000, seed = 567))
+# cefmodel_gof <- gof(cefmodel, GOF = ~ degree + espartners + dspartners, control = control.gof.ergm(MCMC.burnin = 10000, MCMC.interval = 10000, seed = 567)) 
+
+plot(gwmodel_gof, cex.lab = 1.5, cex.axis = 1.5, plotlogodds = T) 
+plot(cefmodel_gof, cex.lab = 1.5, cex.axis = 1.5, plotlogodds = T ) 
+
+```
+
+### Model selection
+
+A comparison of multiple statistical and graphic fit in indicators for the seven models (null, main effects, homophily, differential homophily, second differential homophily, dependence and CEF) have demonstrated that the CEF model has the best fit. The biggest increases in fit during the modelling process can from adding the homophily terms to account for LHDs with similar characteristics (state, programming) being connected and adding the dependence terms to account for degree distribution and transitivity. In addition to examining the fit statistics and graphics from all models, there may be some utility in examining the changes in model fit represented visually in the network through the stages of model building for smaller networks.
+
+For these models the clustering pattern is best produced through the CEF model. The model building process can be reported through these figures and the table below.

@@ -10,7 +10,7 @@ All data required to reproduce the analysis will be stored in `input`.
 
 **Rodent data:** Cleaned rodent data will be obtained from [`rodent_trapping.Rproj`](https://github.com/DidDrog11/rodent_trapping).
 
-**Serological data:** Data will be obtained by analysis of rodent samples in (`SL_lassa_ELISA.Rproj`)[https://github.com/DidDrog11/SL_lassa_ELISA].
+**Serological data:** Data will be obtained by analysis of rodent samples in (`SL_lassa_ELISA.Rproj`)[<https://github.com/DidDrog11/SL_lassa_ELISA>].
 
 ### Code
 
@@ -30,10 +30,10 @@ The manuscript or report will be stored in a `report` folder. This will be writt
 2.  Is seroprevalence increased in rodent networks containing *Mastomys natalensis*?
 3.  What is the role of diverse or depauparate rodent assemblages on risk an individual rodents risk of prior infection with *Lassa mammarenavirus*?
 
-Trapped an area
-Identified the occurrence of a rodent
-Produced a network of rodents trapped in the same spatial and temporal activity
-Identified the potential contacts of that rodent
-Investigated the difference between landuse types
-Tested these rodents for antibodies
-Described the networks of those with evidence of infection
+-   Trapped an area
+-   Identified the occurrence of a rodent
+-   Produced a network of rodents trapped in the same spatial and temporal activity
+-   Identified the potential contacts of that rodent
+-   Investigated the difference between landuse types
+-   Tested these rodents for antibodies
+-   Described the networks of those with evidence of infection

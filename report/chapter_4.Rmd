@@ -11,8 +11,8 @@ output:
   # distill::distill_article:
   #   self_contained: false
   #   toc: true
-   html_document
-  # word_document
+  # html_document
+  word_document
 bibliography: citations.bib
 categories:
   - Lassa
@@ -30,13 +30,15 @@ library(readr)
 
 # Abstract
 
+Rodents move around, their expected range is Xm. We set traps covering Ym^2 in different landuse types across 4 villages in Sierra Leone over Z trapping sessions. If a rodent was trapped within 50m of another rodent during the same trapping session we define this as a potential contact, either direct or indirect. We explore these networks of contacts through an ERGM approach to explore the probability of a contact between different species under different land-use conditions. 
+
 # Introduction
 
 Change to Lassa fever -\> Network -\> Infected rodents in network
 
-Lassa fever caused by *Lassa mammarenavirus* is an endemic zoonotic disease with an between 100,000-900,000 annual infections [@mccormick_prospective_1987; @basinski_bridging_2021]. Asymptomatic infection is thought to be common (up to 80%), although individuals with severe symptoms requiring hospitalisation have generally poor outcomes with mortality in this group reported as 15%. The majority of annually reported cases come from Nigeria, where the Nigerian Centre for Disease Control have rapidly expanded access to testing and centralised reporting of Lassa fever cases. Cases are also reported from the Mano River Valley countries of Guinea, Liberia and Sierra Leone, where testing is less available and reporting more sporadic. Within the countries reporting Lassa fever cases there is important spatial clustering of cases, typically from rural areas. Lassa fever outbreaks also demonstrate temporal variability. In Nigeria reported cases peak in the first 3 months of the year, with low numbers of cases reported throughout the remaining periods, these patterns are less clear in the Western endemic countries with no consistent temporal association with a peak in reported cases.
+Lassa fever caused by *Lassa mammarenavirus* is an endemic zoonotic disease with an between 100,000-900,000 annual infections [@mccormick_prospective_1987; @basinski_bridging_2021]. Asymptomatic infection is thought to be common (up to 80%), although individuals with severe symptoms requiring hospitalisation have generally poor outcomes with mortality in this group reported as 15%. The majority of annually reported cases come from Nigeria, where the Nigerian Centre for Disease Control have rapidly expanded access to testing and centralised reporting of Lassa fever cases. Cases are also reported from the Mano River Valley countries of Guinea, Liberia and Sierra Leone, where testing is less available and reporting more sporadic. Within the countries reporting Lassa fever cases there is important spatial clustering of cases, typically from rural areas. Lassa fever outbreaks also demonstrate temporal variability. In Nigeria reported cases peak in the first 3 months of the year, with low numbers of cases reported throughout the remaining periods, these patterns are less clear in the Western endemic countries with no consistent seasonal association with a peak in reported cases.
 
-Human infections are associated with spillover from rodent hosts, with limited human-to-human transmission reported. The primary host is *Mastomys natalensis* a commensal, native, rodent species present throughout sub-Saharan Africa. These rodents do not develop any clinical symptoms following infection with *Lassa mammarenavirus* and are susceptible to low infectious doses consistent with what might be obtained from a wound from an infected conspecific [@safronetz2022]. Viral RNA is detectable 3 days postinfection, peaking within 1 to 2 weeks and resolving within approximately 40 days, however, RNA persistance was observed in testes beyond this point, prolonged sexual transmission may therefore exist. Based on a similar arenavirus (Morogoro virus), seroconversion is expected to occur 7 days post infection, with detectable antibodies remaining beyond the point in which circulating RNA has declined, therefore seroprevalence is a useful measure of pathogen existence within a location. Transmission, between individuals was found to occur through both contaminated fomites and direct contact, presenting two methods driving sustained pathogen transmission in endemic areas.
+Human infections are associated with spillover from rodent hosts, with a limited role of human-to-human transmission. The primary host is *Mastomys natalensis* a commensal, native, rodent species present throughout sub-Saharan Africa. These rodents do not develop any clinical symptoms following infection with *Lassa mammarenavirus* and are susceptible to low infectious doses consistent with what might be obtained from a wound from an infected conspecific [@safronetz2022]. Viral RNA is detectable 3 days postinfection, peaking within 1 to 2 weeks and resolving within approximately 40 days, however, RNA persistance was observed in testes beyond this point, prolonged sexual transmission may therefore exist. Based on a similar arenavirus (Morogoro virus), seroconversion is expected to occur 7 days post infection, with detectable antibodies remaining beyond the point in which circulating RNA has declined, therefore seroprevalence is a useful measure of pathogen existence within a location. Transmission, between individuals was found to occur through both contaminated fomites and direct contact, presenting two methods driving sustained pathogen transmission in endemic areas.
 
 Despite *M. natalensis* being identified as the primary reservoir, 13 other rodent species have been identified to be acutely or previously infected with *Lassa mammarenavirus* in the endemic zone. The contribution of these species to pathogen spillover, viral transmission and maintenance is unknown. The high contact rates between rodents in species rich environments may produce incidental infections of non-reservoir species which subsequently get detect through surveillance activities while having little impact on viral transmission. Alternatively, these species may act to transfer this pathogen spatially and link *M. natalensis* populations that would not come into contact otherwise. It is therefore important to characterise rodent networks within endemic settings, rather than limiting investigation to a single rodent population.
 
@@ -104,7 +106,7 @@ The networks produced for each land-use category were further subset to only inc
 
 # Results
 
-During the study 420 individual rodents were trapped from 26,524 trap-nights (TN). We identified 12 species from molecular classification, the majority of individuals were identified as *M. natalensis* (N = 75, 17.9%), *Lophuromys sikapusi* (N = 44, 10.5%) and *Mus musculus* (N = 41, 9.8%) (Table 1.).
+420 individual rodents were trapped from 26,524 trap-nights (TN). 12 species were identified from molecular classification, the majority of which were identified as *M. natalensis* (N = 75, 17.9%), *Lophuromys sikapusi* (N = 44, 10.5%) and *Mus musculus* (N = 41, 9.8%) (Table 1.).
 
 Antibodies to *Lassa mammarenavirus* were identified in 20 (4.4%) rodents, including 7 *M. natalensis* (35%), 5 *Crocidura spp.* (25%), 3 *L. sikapusi* (15%) and 3 *Mus minutoides* (15%) (Table 1.). The highest proportion of positivity by the number of individuals tested from a species was observed in *Malacomys edwardsii* (N = 1, 12.5%), *M. natalensis* (N = 7, 9.3%) and *Mus minutoides* (N = 3, 8.6%).
 

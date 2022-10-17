@@ -1,0 +1,507 @@
+---
+title: "Rodent networks"
+author: "David Simons"
+format: html
+editor: visual
+---
+
+## Setup
+
+Load packages and data.
+
+```{r packages-data}
+source(here::here("R", "setup.R"))
+graph_landuse <- read_rds(here("data", "graphs_landuse.rds"))
+```
+
+Convert the data to graph and network objects. Species with less than 10 individuals will be grouped as `Other`. The period of trapping is converted to the `Dry` or `Wet` season and `village_loc` is produced to code for `Urban` and `Rural` villages.
+
+```{r graph-objects}
+rodent_graph <- bind_graphs(graph_landuse$agriculture, graph_landuse$secondary_forest, graph_landuse$village)
+
+# Species with more than 10 nodes
+retain_rodents <- names(table(V(rodent_graph)$Species))[table(V(rodent_graph)$Species) > 10]
+
+rodent_graph <- rodent_graph %>%
+  mutate(Season = case_when(Visit %in% c("1", "2", "5", "6") ~ "Dry",
+                            TRUE ~ "Wet"),
+         Species = case_when(!Species %in% retain_rodents ~ "Other",
+                             TRUE ~ Species),
+         Village_loc = case_when(Village == "Lambayama" ~ "Urban",
+                                 TRUE ~ "Rural"),
+         Landuse = case_when(Landuse == "Secondary_forest" ~ "Forest",
+                             TRUE ~ Landuse),
+         Serostatus = case_when(Serostatus == "Equivocal" ~ "Negative",
+                                TRUE ~ Serostatus))
+
+rodent_graph <- igraph::simplify(as.igraph(rodent_graph))
+
+rodent_net <- asNetwork(rodent_graph)
+
+# Rodent connected is a subgraph of non-isolated nodes
+rodent_connected <- as_tbl_graph(rodent_graph) %>%
+  activate(edges) %>%
+  filter(from != to) %>%
+  activate(nodes) %>%
+  filter(!node_is_isolated())
+```
+
+## Network summary and descriptives
+
+The following is the summary of the network.
+
+```{r network-summary, warning = FALSE}
+options(max.print = 10)
+summary(rodent_net)
+options(max.print = 500)
+```
+
+There are 412 individual rodents, with 339 ties between individuals for an overall density of 0.004. The attributes that will be used will include species, landuse, season, serostatus and village_loc. We have 7 named species, with one other category. The most commonly trapped species were the Crocidura, followed by Mastomys natalensis, Praomys and Lophuromys. The majority of individuals were obtained from Agricultural settings, followed by villages (both inside and outside of homes) with few individuals trapped in the forests. More rodents were trapped in the dry season, than the wet. 20 individuals were positive for *Lassa mammarenavirus* antibodies.
+
+```{r species-network, warning = FALSE}
+ggraph(rodent_net, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point(aes(colour = Species)) +
+  scale_colour_brewer(palette = "Dark2") +
+  theme_graph() +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal")
+```
+
+This produces a species graph which highlights the clustering of *Mus musculus* and *Mastomys natalensis* individuals. The majority of individuals do not have ties to any other individuals.
+
+```{r location-network, warning = FALSE}
+ggraph(rodent_net, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point(aes(colour = Village_loc)) +
+  scale_colour_brewer(palette = "Set1") +
+  labs(colour = "Village location") +
+  theme_graph() +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal")
+```
+
+This graph highlights the locations of the villages from where rodents were trapped. The urban village was Lambayama and here rodents were trapped at greater rates in close proximity to others.
+
+```{r landuse-network, warning = FALSE}
+ggraph(rodent_net, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point(aes(colour = Landuse)) +
+  scale_colour_brewer(palette = "Set2") +
+  theme_graph() +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal")
+```
+
+The largest component of the network are from rodents trapped in agricultural settings, with smaller components from villages. The largest component from the forest is 3 individuals.
+
+```{r serostatus-network, warning = FALSE}
+ggraph(rodent_net, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point(aes(colour = Serostatus)) +
+  scale_colour_brewer(palette = "Set2") +
+  theme_graph() +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal")
+```
+
+Finally this graph shows the ties between individuals and their serostatus.
+
+```{r network-descriptive}
+# Network descriptives
+
+rodent_net_descriptives <- list("mean_degree" = mean(degree(rodent_net, gmode = "graph")),
+                                "sd_degree" = sd(degree(rodent_net, gmode = "graph")),
+                                "degree_table" = table(degree(rodent_net, gmode = "graph")),
+                                "triad_table" = triad.census(rodent_net, mode = "graph"),
+                                "density" = graph.density(asIgraph(rodent_net)))
+rodent_net_descriptives
+
+```
+
+The mean degree of the graph is 1.6, with a standard deviation of 2.2, the majority of the nodes (157) have a degree of 0. This is consistent with the 11 million potential triads not containing a tie.
+
+## Comparison to random graph
+
+We can construct a random graph with the same number of nodes and tie density to investigate the distribution of degree in the rodent data compared to a random network of similar characteristics.
+
+```{r}
+# Random graph of similar size and density
+randomg <- rgraph(412, m = 1, tprob = rodent_net_descriptives$density, mode = "graph")
+random_net <- as.network(randomg, directed = FALSE)
+
+# Comparing distribution of degree between rodent network and random graph
+plot_grid(plotlist = list(random = tibble("degree" = degree(random_net, gmode = "graph")) %>%
+                            ggplot() + 
+                            geom_bar(aes(x = degree)) +
+                            labs(title = "Distribution of degree (Random)") +
+                            theme_bw(),
+                          rodent = tibble("degree" = degree(rodent_net, gmode = "graph")) %>%
+                            ggplot() +
+                            geom_bar(aes(x = degree)) +
+                            labs(title = "Distribution of degree (Rodent)") +
+                            theme_bw()))
+
+```
+
+This shows that more isolated nodes are present than would be expected with a longer right tail of higher degree nodes.
+
+Comparing dyadwise and edgewise shared partner distributions can highlight the clustering in the rodent network.
+
+```{r rodent-clustering-dsp}
+null_random <- ergm(random_net ~ edges)
+gof_null_random <- gof(null_random, GOF = ~ degree + distance + espartners + dspartners)
+
+rodent_esp <- ergm(rodent_net ~ edges)
+gof_rodent_esp <- gof(rodent_esp, GOF = ~ degree + distance + espartners + dspartners)
+
+rodent_dsp <- tibble(name = names(gof_rodent_esp$obs.dspart[2:5]),
+                  dsp = gof_rodent_esp$obs.dspart[2:5]) %>%
+  ggplot() +
+  geom_col(aes(x = name, y = dsp)) +
+  labs(title = "Distribution of DSP1-4 (Rodent)") +
+  theme_bw()
+
+random_dsp <- tibble(name = names(gof_null_random$obs.dspart[2:5]),
+                  dsp = gof_null_random$obs.dspart[2:5]) %>%
+  ggplot() +
+  geom_col(aes(x = name, y = dsp)) +
+  labs(title = "Distribution of DSP1-4 (Random)") +
+  theme_bw()
+
+plot_grid(rodent_dsp, random_dsp)  
+
+```
+
+```{r rodent-esp}
+
+rodent_esp <- tibble(name = names(gof_rodent_esp$obs.espart[2:5]),
+                  dsp = gof_rodent_esp$obs.espart[2:5]) %>%
+  ggplot() +
+  geom_col(aes(x = name, y = dsp)) +
+  labs(title = "Distribution of ESP1-4 (Rodent)") +
+  theme_bw()
+
+random_esp <- tibble(name = names(gof_null_random$obs.espart[2:5]),
+                  dsp = gof_null_random$obs.espart[2:5]) %>%
+  ggplot() +
+  geom_col(aes(x = name, y = dsp)) +
+  labs(title = "Distribution of ESP1-4 (Random)") +
+  theme_bw()
+
+plot_grid(rodent_esp, random_esp)  
+
+```
+
+The observed rodent network has more network members with multiple DSP and ESP compared with the random network. The clustering can also be seen by looking at the mixing matrices.
+
+```{r mixing-matrices}
+
+mixingmatrix(rodent_net, "Species")
+mixingmatrix(rodent_net, "Village_loc")
+mixingmatrix(rodent_net, "Landuse")
+mixingmatrix(rodent_net, "Serostatus")
+
+```
+
+## Effect of node characteristics
+
+We can investigate the effect of node characteristics on degree. Of primary interest is the effect of species.
+
+```{r node-characteristics}
+
+species <- rodent_net %v% "Species"
+deg <- degree(rodent_net)
+
+tibble(Species = species,
+       Degree = deg) %>%
+  group_by(Species) %>%
+  summarise(Degree = mean(Degree)) %>%
+  ungroup() %>%
+  arrange(-Degree) %>%
+  mutate(Species = fct_inorder(Species)) %>%
+  ggplot() +
+  geom_point(aes(x = Species, y = Degree)) +
+  labs(title = "Mean degree by species") +
+  coord_flip() +
+  theme_bw()
+```
+
+The species with the highest mean degree is Mus.
+
+## Building model
+
+We can build a model by iteratively adding further complexity to address the following hypotheses.
+
+1.  There is an association between species and the likelihood of forming ties. This probability will vary by the species involved in the ties.
+2.  There is an association between seroprevalence for *Lassa mammarenavirus* and the likelihood of forming ties.
+
+```{r model-building-1}
+source(here("R", "modified_functions.R"))
+
+summary.ergm.david(null_random)
+
+null_rodent <- ergm(rodent_net ~ edges)
+summary.ergm.david(null_rodent)
+
+main_effects_1 <- ergm(rodent_net ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")))
+summary.ergm.david(main_effects_1)
+
+main_effects_2 <- ergm(rodent_net ~ edges + nodefactor("Serostatus", levels = c("Positive")))
+summary.ergm.david(main_effects_2)
+```
+
+The first model is the random model, which matches the null rodent model for the Odds of a tie forming. Subsequent models are the simplest model for each of the hypotheses presented above:
+
+1.  Compared to the reference species of other species, all species have a higher odds of forming a tie. *Mus musculus* being the most likely, followed by *Praomys spp* and *Mastomys natalensis*.
+2.  Compared to the reference level of negative serology for *Lassa mammarenavirus*, rodents that are positive have lower odds of forming ties with other individuals.
+
+### Predicting ties
+
+The probability of ties between network members can be calculated.
+
+1.  Species model
+
+```{=html}
+<!-- -->
+```
+i)  A *Mus musculus* rodent and another *Mus musculus* = $\text{logistic}(-7.52 * 1 + 1.77 * 2) = 0.01834$
+ii) A *Mus musculus* rodent and a *Mastomys natalensis* = $\text{logistic}(-7.52 * 1 + 1.77 * 1 + 0.89 * 1) = 0.0077$
+iii) A *Mastomys natalensis* rodent and another *Mastomys natalensis* = $\text{logistic}(-7.52 * 1 + 0.89 * 2) = 0.0032$
+
+```{=html}
+<!-- -->
+```
+
+2.  Serostatus model
+
+```{=html}
+<!-- -->
+```
+i)  A rodent with negative serology for *Lassa mammarenavirus* with another = $\text{logistic}(-5.47 * 1) = 0.0042$
+ii) A rodent with negative serology for *Lassa mammarenavirus* with one that is positive = $\text{logistic}((-5.47 * 1 + -0.574 * 1) = 0.0024$
+iii) A rodent with positive serology for *Lassa mammarenavirus* with another = $\text{logistic}((-5.47 * 1 + -0.574 * 2) = 0.0013$
+
+```{r predicting-ties}
+
+simple_species_1 <- plogis(q = (-7.52 * 1 + 1.77 * 2))
+simple_species_2 <- plogis(q = (-7.52 * 1 + 1.77 * 1 + 0.89 * 1))
+simple_species_3 <- plogis(q = (-7.52 * 1 + 0.89 * 2))
+
+simple_serostatus_1 <- plogis(q = (-5.47 * 1))
+simple_serostatus_2 <- plogis(q = (-5.47 * 1 + -0.574 * 1))
+simple_serostatus_3 <- plogis(q = (-5.47 * 1 + -0.574 * 2))
+```
+
+These models are overly simplistic as they do not count for homophily which is important in this context.
+
+## Adding homophily
+
+Continuing to assume dyadic independence we can add differential homophily terms to the models.
+
+```{r model-building-2}
+
+homophily_1 <- ergm(rodent_net ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE))
+summary.ergm.david(homophily_1)
+
+homophily_2 <- ergm(rodent_net ~ edges + nodefactor("Serostatus", levels = c("Positive")) + nodematch("Serostatus", levels = c("Positive")))
+summary.ergm.david(homophily_2)
+
+```
+
+1.  Compared to the reference species of other species, all species except *Mus musculus* have a higher odds of forming a tie when taking into account homophily. The values for homophily suggest that *Mus musculus*, *Mastomys natalensis* and *Rattus rattus* are the most likely to form ties amongst individuals of the same species.
+2.  Compared to the reference level of negative serology for *Lassa mammarenavirus*, rodents that are positive have lower odds of forming ties with other individuals, with rodents of the same status having increased odds of forming a tie.
+
+### Predicting ties
+
+The probability of ties between network members can be calculated for the differential homophily models.
+
+1.  Species model
+
+```{=html}
+<!-- -->
+```
+iv) A *Mus musculus* rodent and another *Mus musculus* = $\text{logistic}(-6.90 * 1 + -1.41 * 2 + 7.33 * 1) = 0.084$
+v)  A *Mus musculus* rodent and a *Mastomys natalensis* = $\text{logistic}(-6.90 * 1 + -1.41 * 1 + 0.058 * 1 + 7.33 * 0 + 2.37 * 0) = 0.00026$
+vi) A *Mastomys natalensis* rodent and another *Mastomys natalensis* = $\text{logistic}(-6.90 * 1 + 0.058 * 2 + 2.37 * 1) = 0.012$
+
+```{=html}
+<!-- -->
+```
+2.  Serostatus model
+
+```{=html}
+<!-- -->
+```
+iv) A rodent with negative serology for *Lassa mammarenavirus* with another = $\text{logistic}(-5.47 * 1 + 1.55 * 1) = 0.019$
+v)  A rodent with negative serology for *Lassa mammarenavirus* with one that is positive = $\text{logistic}(-5.47 * 1 + -0.66 * 1 + 1.55 * 0) = 0.002$
+vi) A rodent with positive serology for *Lassa mammarenavirus* with another = $\text{logistic}(-5.47 * 1 + -0.66 * 2 + 1.55 * 1) = 0.0053$
+
+```{r predicting-ties-2}
+
+homophily_species_4 <- plogis(q = (-6.90 * 1 + -1.41 * 2 + 7.33 * 1))
+homophily_species_5 <- plogis(q = (-6.90 * 1 + -1.41 * 1 + 0.058 * 1 + 7.33 * 0 + 2.37 * 0))
+homophily_species_6 <- plogis(q = (-6.90 * 1 + 0.058 * 2 + 2.37 * 1))
+
+homophily_serostatus_4 <- plogis(q = (-5.47 * 1 + 1.55 * 1))
+homophily_serostatus_5 <- plogis(q = (-5.47 * 1 + -0.66 * 1 + 1.55 * 0))
+homophily_serostatus_6 <- plogis(q = (-5.47 * 1 + -0.66 * 2 + 1.55 * 1))
+```
+
+## Additional terms
+
+Landuse type, village location (Urban/Rural) and Season are likely important components of these models. We can add Landuse type and village location in as `nodematch` terms as there is expected to be clustering of species or homophily within these locations. Season may or may not be a clustering term as it may be that all species respond to changing seasons in the same way. For the first model season will be added in as `nodefactor`, and for the second `nodematch`. The model with the lowest AIC will then be used.
+
+```{r adding-terms}
+
+add_terms_species_1 <- ergm(rodent_net ~ edges + 
+                              nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+                              nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
+                              nodefactor("Season", levels = "Dry") +
+                              nodematch("Village_loc", levels =  "Rural", diff = TRUE) +
+                              nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE))
+summary.ergm.david(add_terms_species_1)
+
+add_terms_species_2 <- ergm(rodent_net ~ edges + 
+                              nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+                              nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
+                              nodematch("Season", levels = "Dry", diff = TRUE) +
+                              nodematch("Village_loc", levels =  "Rural", diff = TRUE) +
+                              nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE))
+summary.ergm.david(add_terms_species_2)
+
+add_terms_species_3 <- ergm(rodent_net ~ edges + 
+                              nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+                              nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
+                              nodematch("Season", levels = "Dry", diff = TRUE) +
+                              nodematch("Village_loc", levels =  "Rural", diff = TRUE) +
+                              nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE) +
+                              isolates())
+summary.ergm.david(add_terms_species_3)
+
+add_terms_serology_1 <- ergm(rodent_net ~ edges + 
+                               nodefactor("Serostatus", levels = c("Positive")) + 
+                               nodematch("Serostatus", levels = c("Positive")) +
+                               nodefactor("Season", levels = "Dry") +
+                               nodematch("Village_loc", levels =  "Rural", diff = TRUE) +
+                               nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE))
+summary.ergm.david(add_terms_serology_1)
+
+add_terms_serology_2 <- ergm(rodent_net ~ edges + 
+                               nodefactor("Serostatus", levels = c("Positive")) + 
+                               nodematch("Serostatus", levels = c("Positive")) +
+                               nodematch("Season", levels = "Dry", diff = TRUE) +
+                               nodematch("Village_loc", levels =  "Rural", diff = TRUE) +
+                               nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE))
+summary.ergm.david(add_terms_serology_2)
+
+```
+
+For both of these more complex models the inclusion of the additional terms as differential homophily terms improves model fit. We can repeat the above equations to calculate the probability of a tie.
+
+### Predicting ties
+
+The probability of ties between network members can be calculated for the differential homophily models.
+
+1.  Species model
+
+```{=html}
+<!-- -->
+```
+vii) A *Mus musculus* rodent and another *Mus musculus* in an urban setting, during the dry season, within the village = $\text{logistic}(-11.38 * 1 + 0.42 * 2 + 4.01 * 1 + 1.42 * 1 + 3.92 * 1) = 0.23$
+viii)  A *Mus musculus* rodent and a *Mastomys natalensis* in an urban setting, during the dry season, within the village = $\text{logistic}(-11.38 * 1 + 0.42 * 1 + -0.28 * 1 + 1.42 * 1 + 3.92 * 1) = 0.0027$
+ix)  A *Mus musculus* rodent and a *Mastomys natalensis* in a rural setting, during the dry season, within the village = $\text{logistic}(-11.38 * 1 + 0.42 * 1 + -0.28 * 1 + 1.5 * 1 + 1.42 * 1 + 3.92 * 1) = 0.012$
+x) A *Mastomys natalensis* rodent and another *Mastomys natalensis* in an urban setting, during the dry season, within the village = $\text{logistic}(-11.38 * 1 + -0.28 * 2 + 2.34 * 1 + 1.42 * 1 + 3.92 * 1) = 0.014$
+xi) A *Mastomys natalensis* rodent and another *Mastomys natalensis* in a rural setting, during the dry season, within the village = $\text{logistic}(-11.38 * 1 + -0.28 * 2 + 2.34 * 1 + 1.5 * 1 + 1.42 * 1 + 3.92 * 1) = 0.059$
+xii) A *Mastomys natalensis* rodent and another *Mastomys natalensis* in a rural setting, during the dry season, within agricultural land = $\text{logistic}(-11.38 * 1 + -0.28 * 2 + 2.34 * 1 + 1.5 * 1 + 1.42 * 1 + 3.12 * 1) = 0.028$
+
+```{=html}
+<!-- -->
+```
+
+These probabilities show that two *Mus musculus* in urban village settings have the greatest odds of coming into contact with another individual of the same species, this is much greater than the rates of contacts between a *Mus musculus* and a *Mastomys natalensis* as well as the contact rates between two *Mastomys natalensis* all other things being equal. We also see that two *Mastomys natalensis* have greater odds of contact within the rural villages compared to urban villages, and within the village compared to in agricultural land.
+
+2.  Serostatus model
+
+```{=html}
+<!-- -->
+```
+vii) A rodent with negative serology for *Lassa mammarenavirus* with another in an urban setting, during the dry season, within the village = $\text{logistic}(-9.15 * 1 + 1.66 * 1 + 1.13 * 1 + 4.51 * 1) = 0.14$
+viii)  A rodent with negative serology for *Lassa mammarenavirus* with one that is positive in an urban setting, during the dry season, within the village = $\text{logistic}(-9.15 * 1 + -0.6 * 1 + 1.13 * 1 + 4.51 * 1) = 0.016$
+ix) A rodent with positive serology for *Lassa mammarenavirus* with another in an urban setting, during the dry season, within the village = $\text{logistic}(-9.15 * 1 + -0.6 * 2 + 1.13 * 1 + 4.51 * 1) = 0.0089$
+x) A rodent with negative serology for *Lassa mammarenavirus* with another in a rural setting, during the dry season, within the village = $\text{logistic}(-9.15 * 1 + 1.66 * 1 + 0.06 * 1 + 1.13 * 1 + 4.51 * 1) = 0.14$
+xi)  A rodent with negative serology for *Lassa mammarenavirus* with one that is positive in a rural setting, during the dry season, within the village = $\text{logistic}(-9.15 * 1 + -0.6 * 1 + 0.06 * 1 + 1.13 * 1 + 4.51 * 1) = 0.017$
+xii) A rodent with positive serology for *Lassa mammarenavirus* with another in a rural setting, during the dry season, within the village = $\text{logistic}(-9.15 * 1 + -0.6 * 2 + 0.06 * 1 + 1.13 * 1 + 4.51 * 1) = 0.0095$
+
+These probabilities show that the odds of contact between negative rodents is much greater (driven by the finding that most rodents are negative), than that involving a positive rodent. The probabilities of contact among positive rodents within both an urban setting and rural setting are similar. 
+```{r predicting-ties-3}
+
+homophily_species_7 <- plogis(q = (-11.38 * 1 + 0.42 * 2 + 4.01 * 1 + 1.42 * 1 + 3.92 * 1))
+homophily_species_8 <- plogis(q = (-11.38 * 1 + 0.42 * 1 + -0.28 * 1 + 1.42 * 1 + 3.92 * 1))
+homophily_species_9 <- plogis(q = (-11.38 * 1 + 0.42 * 1 + -0.28 * 1 + 1.5 * 1 + 1.42 * 1 + 3.92 * 1))
+homophily_species_10 <- plogis(q = (-11.38 * 1 + -0.28 * 2 + 2.34 * 1 + 1.42 * 1 + 3.92 * 1))
+homophily_species_11 <- plogis(q = (-11.38 * 1 + -0.28 * 2 + 2.34 * 1 + 1.5 * 1 + 1.42 * 1 + 3.92 * 1))
+homophily_species_12 <- plogis(q = (-11.38 * 1 + -0.28 * 2 + 2.34 * 1 + 1.5 * 1 + 1.42 * 1 + 3.12 * 1))
+
+homophily_serostatus_7 <- plogis(q = (-9.15 * 1 + 1.66 * 1 + 1.13 * 1 + 4.51 * 1))
+homophily_serostatus_8 <- plogis(q = (-9.15 * 1 + -0.6 * 1 + 1.13 * 1 + 4.51 * 1))
+homophily_serostatus_9 <- plogis(q = (-9.15 * 1 + -0.6 * 2 + 1.13 * 1 + 4.51 * 1))
+homophily_serostatus_10 <- plogis(q = (-9.15 * 1 + 1.66 * 1 + 0.06 * 1 + 1.13 * 1 + 4.51 * 1))
+homophily_serostatus_11 <- plogis(q = (-9.15 * 1 + -0.6 * 1 + 0.06 * 1 + 1.13 * 1 + 4.51 * 1))
+homophily_serostatus_12 <- plogis(q = (-9.15 * 1 + -0.6 * 2 + 0.06 * 1 + 1.13 * 1 + 4.51 * 1))
+```
+
+## Model fit
+
+The models so far assume dyadic independence. We can test the fit of these models through various means. First for the species tie model.
+
+```{r model-fit-species-1}
+# First simulate the models
+null_sim <- simulate(null_random, verbose = TRUE, seed = 123)
+main_1_sim <- simulate(main_effects_1, verbose = TRUE, seed = 123)
+homophily_1_sim <- simulate(homophily_1, verbose = TRUE, seed = 123)
+complex_sim_1 <- simulate(add_terms_species_1, verbose = TRUE, seed = 123)
+complex_sim_2 <- simulate(add_terms_species_2, verbose = TRUE, seed = 123)
+complex_sim_3 <- simulate(add_terms_species_3, verbose = TRUE, seed = 123)
+complex_sim_4 <- simulate(add_terms_species_4, verbose = TRUE, seed = 123)
+
+
+row_gof <- rbind(summary(rodent_net ~ edges + degree(0:5) + triangle),
+                 summary(null_sim ~ edges + degree(0:5) + triangle),
+                 summary(main_1_sim ~ edges + degree(0:5) + triangle),
+                 summary(homophily_1_sim ~ edges + degree(0:5) + triangle),
+                 summary(complex_sim_1 ~ edges + degree(0:5) + triangle),
+                 summary(complex_sim_2 ~ edges + degree(0:5) + triangle),
+                 summary(complex_sim_3 ~ edges + degree(0:5) + triangle),
+                 summary(complex_sim_4 ~ edges + degree(0:5) + triangle))
+
+bind_cols(model = c("Observed network", "Null model", "Main effects only", "Homophily only", "Differential homophily and terms 1", "Differential homophily and terms 2", "Differential homophily and isolates"), row_gof,
+          aic = c(NA, AIC(null_random)[1], AIC(main_effects_1)[1], AIC(homophily_1)[1], AIC(add_terms_species_1)[1], AIC(add_terms_species_2)[1],
+                  AIC(add_terms_species_3)[1]),
+          bic = c(NA, BIC(null_random)[1], BIC(main_effects_1)[1], BIC(homophily_1)[1], BIC(add_terms_species_1)[1], BIC(add_terms_species_2)[1],
+                  BIC(add_terms_species_3)[1]))
+
+```
+
+This summarises the simulations from the different models compared to the observed network alongside showing the reducing AIC/BIC as homophily and additional terms are added. These models fail to capture the number of triangles and low degree nodes within the observed network. However, adding dependence terms including GWdegree, GWESP and GWDSP results in a degenerate model.
+
+## CEF
+
+This does not work for the complete model. Despite several attempts and leaving for several days.
+
+```{r cef-species}
+
+# cefmodel_species <- ergm(rodent_net ~ edges + 
+#                            nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+#                            nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
+#                            nodematch("Season", levels = "Dry", diff = TRUE) +
+#                            nodematch("Village_loc", levels =  "Rural", diff = TRUE) +
+#                            nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE) +
+#                            gwdegree(cutoff = 5) +
+#                            gwesp(cutoff = 5) +
+#                            gwdsp(cutoff = 5),
+#                          eval.loglik = TRUE,
+#                          verbose = TRUE)
+# write_rds(cefmodel_species, here("temp", "cef_species.rds"))
+```
+

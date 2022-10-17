@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.0.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="David Simons">
+
+<title>Rodent networks</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="rodent_networks_files/libs/clipboard/clipboard.min.js"></script>
+<script src="rodent_networks_files/libs/quarto-html/quarto.js"></script>
+<script src="rodent_networks_files/libs/quarto-html/popper.min.js"></script>
+<script src="rodent_networks_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="rodent_networks_files/libs/quarto-html/anchor.min.js"></script>
+<link href="rodent_networks_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="rodent_networks_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="rodent_networks_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="rodent_networks_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="rodent_networks_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Rodent networks</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>David Simons </p>
+          </div>
+  </div>
+    
+    
+  </div>
+  
+
+</header>
+
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<p>Load packages and data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"R"</span>, <span class="st">"setup.R"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: pacman</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>graph_landuse <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"graphs_landuse.rds"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Convert the data to graph and network objects. Species with less than 10 individuals will be grouped as <code>Other</code>. The period of trapping is converted to the <code>Dry</code> or <code>Wet</code> season and <code>village_loc</code> is produced to code for <code>Urban</code> and <code>Rural</code> villages.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>rodent_graph <span class="ot">&lt;-</span> <span class="fu">bind_graphs</span>(graph_landuse<span class="sc">$</span>agriculture, graph_landuse<span class="sc">$</span>secondary_forest, graph_landuse<span class="sc">$</span>village)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Species with more than 10 nodes</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>retain_rodents <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">table</span>(<span class="fu">V</span>(rodent_graph)<span class="sc">$</span>Species))[<span class="fu">table</span>(<span class="fu">V</span>(rodent_graph)<span class="sc">$</span>Species) <span class="sc">&gt;</span> <span class="dv">10</span>]</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>rodent_graph <span class="ot">&lt;-</span> rodent_graph <span class="sc">%&gt;%</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Season =</span> <span class="fu">case_when</span>(Visit <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"1"</span>, <span class="st">"2"</span>, <span class="st">"5"</span>, <span class="st">"6"</span>) <span class="sc">~</span> <span class="st">"Dry"</span>,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>                            <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"Wet"</span>),</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">Species =</span> <span class="fu">case_when</span>(<span class="sc">!</span>Species <span class="sc">%in%</span> retain_rodents <span class="sc">~</span> <span class="st">"Other"</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                             <span class="cn">TRUE</span> <span class="sc">~</span> Species),</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>         <span class="at">Village_loc =</span> <span class="fu">case_when</span>(Village <span class="sc">==</span> <span class="st">"Lambayama"</span> <span class="sc">~</span> <span class="st">"Urban"</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                                 <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"Rural"</span>),</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>         <span class="at">Landuse =</span> <span class="fu">case_when</span>(Landuse <span class="sc">==</span> <span class="st">"Secondary_forest"</span> <span class="sc">~</span> <span class="st">"Forest"</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                             <span class="cn">TRUE</span> <span class="sc">~</span> Landuse),</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>         <span class="at">Serostatus =</span> <span class="fu">case_when</span>(Serostatus <span class="sc">==</span> <span class="st">"Equivocal"</span> <span class="sc">~</span> <span class="st">"Negative"</span>,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>                                <span class="cn">TRUE</span> <span class="sc">~</span> Serostatus))</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>rodent_graph <span class="ot">&lt;-</span> igraph<span class="sc">::</span><span class="fu">simplify</span>(<span class="fu">as.igraph</span>(rodent_graph))</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>rodent_net <span class="ot">&lt;-</span> <span class="fu">asNetwork</span>(rodent_graph)</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Rodent connected is a subgraph of non-isolated nodes</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>rodent_connected <span class="ot">&lt;-</span> <span class="fu">as_tbl_graph</span>(rodent_graph) <span class="sc">%&gt;%</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(edges) <span class="sc">%&gt;%</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(from <span class="sc">!=</span> to) <span class="sc">%&gt;%</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(nodes) <span class="sc">%&gt;%</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">node_is_isolated</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="network-summary-and-descriptives" class="level2">
+<h2 class="anchored" data-anchor-id="network-summary-and-descriptives">Network summary and descriptives</h2>
+<p>The following is the summary of the network.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">max.print =</span> <span class="dv">10</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(rodent_net)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Network attributes:
+  vertices = 412
+  directed = FALSE
+  hyper = FALSE
+  loops = FALSE
+  multiple = FALSE
+  bipartite = FALSE
+ total edges = 339 
+   missing edges = 0 
+   non-missing edges = 339 
+ density = 0.004003969 
+
+Vertex attributes:
+
+ Grid:
+   character valued attribute
+   attribute summary:
+  1   2   3   4   5   6   7 
+ 87  63  59  49  32  10 112 
+
+ Landuse:
+   character valued attribute
+   attribute summary:
+Agriculture      Forest     Village 
+        259          31         122 
+
+ Season:
+   character valued attribute
+   attribute summary:
+Dry Wet 
+274 138 
+
+ Serostatus:
+   character valued attribute
+   attribute summary:
+Negative Positive 
+     392       20 
+
+ Species:
+   character valued attribute
+   attribute summary:
+      Crocidura spp Lophuromys sikapusi Mastomys natalensis      Mus minutoides 
+                 83                  44                  75                  35 
+       Mus musculus               Other         Praomys spp       Rattus rattus 
+                 41                  28                  68                  38 
+  vertex.names:
+   character valued attribute
+   412 valid vertex names
+
+ Village:
+   character valued attribute
+   attribute summary:
+   Baiama   Bambawo   Lalehun Lambayama   Seilama 
+       45        13       103        61       190 
+
+ Village_loc:
+   character valued attribute
+   attribute summary:
+Rural Urban 
+  351    61 
+
+ Visit:
+   character valued attribute
+   attribute summary:
+ 1  2  3  4  5  6 
+45 72 58 80 99 58 
+
+No edge attributes
+
+Network edgelist matrix:
+       [,1] [,2]
+  [1,]    4    7
+  [2,]    5   11
+  [3,]    6    8
+  [4,]   13   18
+  [5,]   13   19
+ [ reached getOption("max.print") -- omitted 334 rows ]</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">max.print =</span> <span class="dv">500</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>There are 412 individual rodents, with 339 ties between individuals for an overall density of 0.004. The attributes that will be used will include species, landuse, season, serostatus and village_loc. We have 7 named species, with one other category. The most commonly trapped species were the Crocidura, followed by Mastomys natalensis, Praomys and Lophuromys. The majority of individuals were obtained from Agricultural settings, followed by villages (both inside and outside of homes) with few individuals trapped in the forests. More rodents were trapped in the dry season, than the wet. 20 individuals were positive for <em>Lassa mammarenavirus</em> antibodies.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(rodent_net, <span class="at">layout =</span> <span class="st">"fr"</span>) <span class="sc">+</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>() <span class="sc">+</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">colour =</span> Species)) <span class="sc">+</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_brewer</span>(<span class="at">palette =</span> <span class="st">"Dark2"</span>) <span class="sc">+</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_graph</span>() <span class="sc">+</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.direction =</span> <span class="st">"horizontal"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="rodent_networks_files/figure-html/species-network-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This produces a species graph which highlights the clustering of <em>Mus musculus</em> and <em>Mastomys natalensis</em> individuals. The majority of individuals do not have ties to any other individuals.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(rodent_net, <span class="at">layout =</span> <span class="st">"fr"</span>) <span class="sc">+</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>() <span class="sc">+</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">colour =</span> Village_loc)) <span class="sc">+</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">colour =</span> <span class="st">"Village location"</span>) <span class="sc">+</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_graph</span>() <span class="sc">+</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.direction =</span> <span class="st">"horizontal"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="rodent_networks_files/figure-html/location-network-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This graph highlights the locations of the villages from where rodents were trapped. The urban village was Lambayama and here rodents were trapped at greater rates in close proximity to others.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(rodent_net, <span class="at">layout =</span> <span class="st">"fr"</span>) <span class="sc">+</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>() <span class="sc">+</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">colour =</span> Landuse)) <span class="sc">+</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_brewer</span>(<span class="at">palette =</span> <span class="st">"Set2"</span>) <span class="sc">+</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_graph</span>() <span class="sc">+</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.direction =</span> <span class="st">"horizontal"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="rodent_networks_files/figure-html/landuse-network-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The largest component of the network are from rodents trapped in agricultural settings, with smaller components from villages. The largest component from the forest is 3 individuals.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(rodent_net, <span class="at">layout =</span> <span class="st">"fr"</span>) <span class="sc">+</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_edge_link</span>() <span class="sc">+</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">colour =</span> Serostatus)) <span class="sc">+</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_brewer</span>(<span class="at">palette =</span> <span class="st">"Set2"</span>) <span class="sc">+</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_graph</span>() <span class="sc">+</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.direction =</span> <span class="st">"horizontal"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="rodent_networks_files/figure-html/serostatus-network-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Finally this graph shows the ties between individuals and their serostatus.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Network descriptives</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>rodent_net_descriptives <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="st">"mean_degree"</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">degree</span>(rodent_net, <span class="at">gmode =</span> <span class="st">"graph"</span>)),</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"sd_degree"</span> <span class="ot">=</span> <span class="fu">sd</span>(<span class="fu">degree</span>(rodent_net, <span class="at">gmode =</span> <span class="st">"graph"</span>)),</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"degree_table"</span> <span class="ot">=</span> <span class="fu">table</span>(<span class="fu">degree</span>(rodent_net, <span class="at">gmode =</span> <span class="st">"graph"</span>)),</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"triad_table"</span> <span class="ot">=</span> <span class="fu">triad.census</span>(rodent_net, <span class="at">mode =</span> <span class="st">"graph"</span>),</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"density"</span> <span class="ot">=</span> <span class="fu">graph.density</span>(<span class="fu">asIgraph</span>(rodent_net)))</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>rodent_net_descriptives</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$mean_degree
+[1] 1.645631
+
+$sd_degree
+[1] 2.21599
+
+$degree_table
+
+  0   1   2   3   4   5   6   7   8   9  10  11 
+157 111  60  21  19   7  15  10   5   1   2   4 
+
+$triad_table
+            0      1   2   3
+[1,] 11432906 137590 172 352
+
+$density
+[1] 0.004003969</code></pre>
+</div>
+</div>
+<p>The mean degree of the graph is 1.6, with a standard deviation of 2.2, the majority of the nodes (157) have a degree of 0. This is consistent with the 11 million potential triads not containing a tie.</p>
+</section>
+<section id="comparison-to-random-graph" class="level2">
+<h2 class="anchored" data-anchor-id="comparison-to-random-graph">Comparison to random graph</h2>
+<p>We can construct a random graph with the same number of nodes and tie density to investigate the distribution of degree in the rodent data compared to a random network of similar characteristics.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Random graph of similar size and density</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>randomg <span class="ot">&lt;-</span> <span class="fu">rgraph</span>(<span class="dv">412</span>, <span class="at">m =</span> <span class="dv">1</span>, <span class="at">tprob =</span> rodent_net_descriptives<span class="sc">$</span>density, <span class="at">mode =</span> <span class="st">"graph"</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>random_net <span class="ot">&lt;-</span> <span class="fu">as.network</span>(randomg, <span class="at">directed =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Comparing distribution of degree between rodent network and random graph</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_grid</span>(<span class="at">plotlist =</span> <span class="fu">list</span>(<span class="at">random =</span> <span class="fu">tibble</span>(<span class="st">"degree"</span> <span class="ot">=</span> <span class="fu">degree</span>(random_net, <span class="at">gmode =</span> <span class="st">"graph"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">geom_bar</span>(<span class="fu">aes</span>(<span class="at">x =</span> degree)) <span class="sc">+</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Distribution of degree (Random)"</span>) <span class="sc">+</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">theme_bw</span>(),</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>                          <span class="at">rodent =</span> <span class="fu">tibble</span>(<span class="st">"degree"</span> <span class="ot">=</span> <span class="fu">degree</span>(rodent_net, <span class="at">gmode =</span> <span class="st">"graph"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">geom_bar</span>(<span class="fu">aes</span>(<span class="at">x =</span> degree)) <span class="sc">+</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Distribution of degree (Rodent)"</span>) <span class="sc">+</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">theme_bw</span>()))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="rodent_networks_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This shows that more isolated nodes are present than would be expected with a longer right tail of higher degree nodes.</p>
+<p>Comparing dyadwise and edgewise shared partner distributions can highlight the clustering in the rodent network.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>null_random <span class="ot">&lt;-</span> <span class="fu">ergm</span>(random_net <span class="sc">~</span> edges)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Evaluating the predictor and response matrix.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Maximizing the pseudolikelihood.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Finished MPLE.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Stopping at the initial estimate.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>gof_null_random <span class="ot">&lt;-</span> <span class="fu">gof</span>(null_random, <span class="at">GOF =</span> <span class="sc">~</span> degree <span class="sc">+</span> distance <span class="sc">+</span> espartners <span class="sc">+</span> dspartners)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>rodent_esp <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):
+Evaluating the predictor and response matrix.
+Maximizing the pseudolikelihood.
+Finished MPLE.
+Stopping at the initial estimate.
+Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>gof_rodent_esp <span class="ot">&lt;-</span> <span class="fu">gof</span>(rodent_esp, <span class="at">GOF =</span> <span class="sc">~</span> degree <span class="sc">+</span> distance <span class="sc">+</span> espartners <span class="sc">+</span> dspartners)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>rodent_dsp <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">name =</span> <span class="fu">names</span>(gof_rodent_esp<span class="sc">$</span>obs.dspart[<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>]),</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                  <span class="at">dsp =</span> gof_rodent_esp<span class="sc">$</span>obs.dspart[<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>]) <span class="sc">%&gt;%</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(<span class="at">x =</span> name, <span class="at">y =</span> dsp)) <span class="sc">+</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Distribution of DSP1-4 (Rodent)"</span>) <span class="sc">+</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>random_dsp <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">name =</span> <span class="fu">names</span>(gof_null_random<span class="sc">$</span>obs.dspart[<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>]),</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>                  <span class="at">dsp =</span> gof_null_random<span class="sc">$</span>obs.dspart[<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>]) <span class="sc">%&gt;%</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(<span class="at">x =</span> name, <span class="at">y =</span> dsp)) <span class="sc">+</span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Distribution of DSP1-4 (Random)"</span>) <span class="sc">+</span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_grid</span>(rodent_dsp, random_dsp)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="rodent_networks_files/figure-html/rodent-clustering-dsp-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>rodent_esp <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">name =</span> <span class="fu">names</span>(gof_rodent_esp<span class="sc">$</span>obs.espart[<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>]),</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">dsp =</span> gof_rodent_esp<span class="sc">$</span>obs.espart[<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>]) <span class="sc">%&gt;%</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(<span class="at">x =</span> name, <span class="at">y =</span> dsp)) <span class="sc">+</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Distribution of ESP1-4 (Rodent)"</span>) <span class="sc">+</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>random_esp <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">name =</span> <span class="fu">names</span>(gof_null_random<span class="sc">$</span>obs.espart[<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>]),</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>                  <span class="at">dsp =</span> gof_null_random<span class="sc">$</span>obs.espart[<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>]) <span class="sc">%&gt;%</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(<span class="at">x =</span> name, <span class="at">y =</span> dsp)) <span class="sc">+</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Distribution of ESP1-4 (Random)"</span>) <span class="sc">+</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_grid</span>(rodent_esp, random_esp)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="rodent_networks_files/figure-html/rodent-esp-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The observed rodent network has more network members with multiple DSP and ESP compared with the random network. The clustering can also be seen by looking at the mixing matrices.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mixingmatrix</span>(rodent_net, <span class="st">"Species"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                    Crocidura spp Lophuromys sikapusi Mastomys natalensis
+Crocidura spp                  16                  16                  10
+Lophuromys sikapusi            16                  10                   4
+Mastomys natalensis            10                   4                  34
+Mus minutoides                  8                   6                   3
+Mus musculus                    6                   0                   0
+Other                           2                   3                   5
+Praomys spp                    21                  14                   6
+Rattus rattus                   2                   0                  14
+                    Mus minutoides Mus musculus Other Praomys spp Rattus rattus
+Crocidura spp                    8            6     2          21             2
+Lophuromys sikapusi              6            0     3          14             0
+Mastomys natalensis              3            0     5           6            14
+Mus minutoides                   5            0     0          20             0
+Mus musculus                     0           69     0           0             0
+Other                            0            0     1           4             1
+Praomys spp                     20            0     4          42             6
+Rattus rattus                    0            0     1           6            11</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Note:  Marginal totals can be misleading for undirected mixing matrices.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mixingmatrix</span>(rodent_net, <span class="st">"Village_loc"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      Rural Urban
+Rural   260     0
+Urban     0    79</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Note:  Marginal totals can be misleading for undirected mixing matrices.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mixingmatrix</span>(rodent_net, <span class="st">"Landuse"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>            Agriculture Forest Village
+Agriculture         211      0       0
+Forest                0      9       0
+Village               0      0     119</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Note:  Marginal totals can be misleading for undirected mixing matrices.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mixingmatrix</span>(rodent_net, <span class="st">"Serostatus"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         Negative Positive
+Negative      321       17
+Positive       17        1</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Note:  Marginal totals can be misleading for undirected mixing matrices.</code></pre>
+</div>
+</div>
+</section>
+<section id="effect-of-node-characteristics" class="level2">
+<h2 class="anchored" data-anchor-id="effect-of-node-characteristics">Effect of node characteristics</h2>
+<p>We can investigate the effect of node characteristics on degree. Of primary interest is the effect of species.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>species <span class="ot">&lt;-</span> rodent_net <span class="sc">%v%</span> <span class="st">"Species"</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>deg <span class="ot">&lt;-</span> <span class="fu">degree</span>(rodent_net)</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">Species =</span> species,</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">Degree =</span> deg) <span class="sc">%&gt;%</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Species) <span class="sc">%&gt;%</span></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">Degree =</span> <span class="fu">mean</span>(Degree)) <span class="sc">%&gt;%</span></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="sc">-</span>Degree) <span class="sc">%&gt;%</span></span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Species =</span> <span class="fu">fct_inorder</span>(Species)) <span class="sc">%&gt;%</span></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x =</span> Species, <span class="at">y =</span> Degree)) <span class="sc">+</span></span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Mean degree by species"</span>) <span class="sc">+</span></span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="rodent_networks_files/figure-html/node-characteristics-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The species with the highest mean degree is Mus.</p>
+</section>
+<section id="building-model" class="level2">
+<h2 class="anchored" data-anchor-id="building-model">Building model</h2>
+<p>We can build a model by iteratively adding further complexity to address the following hypotheses.</p>
+<ol type="1">
+<li>There is an association between species and the likelihood of forming ties. This probability will vary by the species involved in the ties.</li>
+<li>There is an association between seroprevalence for <em>Lassa mammarenavirus</em> and the likelihood of forming ties.</li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">"R"</span>, <span class="st">"modified_functions.R"</span>))</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(null_random)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = random_net ~ edges)
+
+Maximum Likelihood Results:
+
+      Estimate Std. Error MCMC %   Wald    OR Lower Upper Pr(&gt;|z|)    
+edges -5.47582    0.05334      0 -102.7 0.004 0.004 0.005   &lt;1e-04 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   4573  on 84665  degrees of freedom
+ 
+AIC: 4575  BIC: 4585  (Smaller is better. MC Std. Err. = 0)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>null_rodent <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Evaluating the predictor and response matrix.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Maximizing the pseudolikelihood.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Finished MPLE.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Stopping at the initial estimate.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(null_rodent)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = rodent_net ~ edges)
+
+Maximum Likelihood Results:
+
+      Estimate Std. Error MCMC %   Wald    OR Lower Upper Pr(&gt;|z|)    
+edges -5.51646    0.05442      0 -101.4 0.004 0.004 0.004   &lt;1e-04 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   4420  on 84665  degrees of freedom
+ 
+AIC: 4422  BIC: 4431  (Smaller is better. MC Std. Err. = 0)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>main_effects_1 <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">nodefactor</span>(<span class="st">"Species"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Crocidura spp"</span>, <span class="st">"Mastomys natalensis"</span>, <span class="st">"Praomys spp"</span>, <span class="st">"Lophuromys sikapusi"</span>, <span class="st">"Mus musculus"</span>, <span class="st">"Rattus rattus"</span>, <span class="st">"Mus minutoides"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):
+Evaluating the predictor and response matrix.
+Maximizing the pseudolikelihood.
+Finished MPLE.
+Stopping at the initial estimate.
+Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(main_effects_1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = rodent_net ~ edges + nodefactor("Species", levels = c("Crocidura spp", 
+    "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", 
+    "Mus musculus", "Rattus rattus", "Mus minutoides")))
+
+Maximum Likelihood Results:
+
+                                       Estimate Std. Error MCMC %    Wald    OR
+edges                                   -7.5206     0.4827      0 -15.581 0.001
+nodefactor.Species.Crocidura spp         0.6574     0.2633      0   2.496 1.930
+nodefactor.Species.Mastomys natalensis   0.8858     0.2610      0   3.394 2.425
+nodefactor.Species.Praomys spp           1.3304     0.2559      0   5.198 3.782
+nodefactor.Species.Lophuromys sikapusi   0.8616     0.2738      0   3.147 2.367
+nodefactor.Species.Mus musculus          1.7682     0.2570      0   6.879 5.860
+nodefactor.Species.Rattus rattus         0.6706     0.2852      0   2.352 1.955
+nodefactor.Species.Mus minutoides        0.7971     0.2835      0   2.811 2.219
+                                       Lower Upper Pr(&gt;|z|)    
+edges                                  0.000 0.001  &lt; 1e-04 ***
+nodefactor.Species.Crocidura spp       1.152 3.233  0.01255 *  
+nodefactor.Species.Mastomys natalensis 1.454 4.045  0.00069 ***
+nodefactor.Species.Praomys spp         2.290 6.246  &lt; 1e-04 ***
+nodefactor.Species.Lophuromys sikapusi 1.384 4.048  0.00165 ** 
+nodefactor.Species.Mus musculus        3.541 9.699  &lt; 1e-04 ***
+nodefactor.Species.Rattus rattus       1.118 3.420  0.01869 *  
+nodefactor.Species.Mus minutoides      1.273 3.868  0.00493 ** 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   4291  on 84658  degrees of freedom
+ 
+AIC: 4307  BIC: 4382  (Smaller is better. MC Std. Err. = 0)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>main_effects_2 <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">nodefactor</span>(<span class="st">"Serostatus"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Positive"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):
+Evaluating the predictor and response matrix.
+Maximizing the pseudolikelihood.
+Finished MPLE.
+Stopping at the initial estimate.
+Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(main_effects_2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = rodent_net ~ edges + nodefactor("Serostatus", 
+    levels = c("Positive")))
+
+Maximum Likelihood Results:
+
+                               Estimate Std. Error MCMC %   Wald    OR Lower
+edges                          -5.47352    0.05598      0 -97.78 0.004 0.004
+nodefactor.Serostatus.Positive -0.57364    0.23315      0  -2.46 0.563 0.357
+                               Upper Pr(&gt;|z|)    
+edges                          0.005   &lt;1e-04 ***
+nodefactor.Serostatus.Positive 0.890   0.0139 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   4412  on 84664  degrees of freedom
+ 
+AIC: 4416  BIC: 4435  (Smaller is better. MC Std. Err. = 0)</code></pre>
+</div>
+</div>
+<p>The first model is the random model, which matches the null rodent model for the Odds of a tie forming. Subsequent models are the simplest model for each of the hypotheses presented above:</p>
+<ol type="1">
+<li>Compared to the reference species of other species, all species have a higher odds of forming a tie. <em>Mus musculus</em> being the most likely, followed by <em>Praomys spp</em> and <em>Mastomys natalensis</em>.</li>
+<li>Compared to the reference level of negative serology for <em>Lassa mammarenavirus</em>, rodents that are positive have lower odds of forming ties with other individuals.</li>
+</ol>
+<section id="predicting-ties" class="level3">
+<h3 class="anchored" data-anchor-id="predicting-ties">Predicting ties</h3>
+<p>The probability of ties between network members can be calculated.</p>
+<ol type="1">
+<li>Species model</li>
+</ol>
+<!-- -->
+<ol type="i">
+<li>A <em>Mus musculus</em> rodent and another <em>Mus musculus</em> = <span class="math inline">\(\text{logistic}(-7.52 * 1 + 1.77 * 2) = 0.01834\)</span></li>
+<li>A <em>Mus musculus</em> rodent and a <em>Mastomys natalensis</em> = <span class="math inline">\(\text{logistic}(-7.52 * 1 + 1.77 * 1 + 0.89 * 1) = 0.0077\)</span></li>
+<li>A <em>Mastomys natalensis</em> rodent and another <em>Mastomys natalensis</em> = <span class="math inline">\(\text{logistic}(-7.52 * 1 + 0.89 * 2) = 0.0032\)</span></li>
+</ol>
+<!-- -->
+<ol start="2" type="1">
+<li>Serostatus model</li>
+</ol>
+<!-- -->
+<ol type="i">
+<li>A rodent with negative serology for <em>Lassa mammarenavirus</em> with another = <span class="math inline">\(\text{logistic}(-5.47 * 1) = 0.0042\)</span></li>
+<li>A rodent with negative serology for <em>Lassa mammarenavirus</em> with one that is positive = <span class="math inline">\(\text{logistic}((-5.47 * 1 + -0.574 * 1) = 0.0024\)</span></li>
+<li>A rodent with positive serology for <em>Lassa mammarenavirus</em> with another = <span class="math inline">\(\text{logistic}((-5.47 * 1 + -0.574 * 2) = 0.0013\)</span></li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>simple_species_1 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">7.52</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.77</span> <span class="sc">*</span> <span class="dv">2</span>))</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>simple_species_2 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">7.52</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.77</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.89</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>simple_species_3 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">7.52</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.89</span> <span class="sc">*</span> <span class="dv">2</span>))</span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>simple_serostatus_1 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">5.47</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a>simple_serostatus_2 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">5.47</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.574</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a>simple_serostatus_3 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">5.47</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.574</span> <span class="sc">*</span> <span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>These models are overly simplistic as they do not count for homophily which is important in this context.</p>
+</section>
+</section>
+<section id="adding-homophily" class="level2">
+<h2 class="anchored" data-anchor-id="adding-homophily">Adding homophily</h2>
+<p>Continuing to assume dyadic independence we can add differential homophily terms to the models.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>homophily_1 <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">nodefactor</span>(<span class="st">"Species"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Crocidura spp"</span>, <span class="st">"Mastomys natalensis"</span>, <span class="st">"Praomys spp"</span>, <span class="st">"Lophuromys sikapusi"</span>, <span class="st">"Mus musculus"</span>, <span class="st">"Rattus rattus"</span>, <span class="st">"Mus minutoides"</span>)) <span class="sc">+</span> <span class="fu">nodematch</span>(<span class="st">"Species"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Crocidura spp"</span>, <span class="st">"Mastomys natalensis"</span>, <span class="st">"Praomys spp"</span>, <span class="st">"Lophuromys sikapusi"</span>, <span class="st">"Mus musculus"</span>, <span class="st">"Rattus rattus"</span>, <span class="st">"Mus minutoides"</span>), <span class="at">diff =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Evaluating the predictor and response matrix.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Maximizing the pseudolikelihood.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Finished MPLE.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Stopping at the initial estimate.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(homophily_1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = rodent_net ~ edges + nodefactor("Species", levels = c("Crocidura spp", 
+    "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", 
+    "Mus musculus", "Rattus rattus", "Mus minutoides")) + nodematch("Species", 
+    levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", 
+        "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", 
+        "Mus minutoides"), diff = TRUE))
+
+Maximum Likelihood Results:
+
+                                       Estimate Std. Error MCMC %    Wald
+edges                                  -6.90222    0.48158      0 -14.333
+nodefactor.Species.Crocidura spp        0.51431    0.28327      0   1.816
+nodefactor.Species.Mastomys natalensis  0.05842    0.29496      0   0.198
+nodefactor.Species.Praomys spp          0.84526    0.28222      0   2.995
+nodefactor.Species.Lophuromys sikapusi  0.62099    0.29417      0   2.111
+nodefactor.Species.Mus musculus        -1.40910    0.47814      0  -2.947
+nodefactor.Species.Rattus rattus        0.06467    0.32547      0   0.199
+nodefactor.Species.Mus minutoides       0.67494    0.30006      0   2.249
+nodematch.Species.Crocidura spp         0.51849    0.36938      0   1.404
+nodematch.Species.Mastomys natalensis   2.39566    0.36684      0   6.530
+nodematch.Species.Praomys spp           1.23693    0.30568      0   4.046
+nodematch.Species.Lophuromys sikapusi   1.12121    0.45149      0   2.483
+nodematch.Species.Mus musculus          7.33313    0.83054      0   8.829
+nodematch.Species.Rattus rattus         2.63119    0.52397      0   5.022
+nodematch.Species.Mus minutoides        0.78165    0.56489      0   1.384
+                                             OR   Lower    Upper Pr(&gt;|z|)    
+edges                                     0.001   0.000    0.003  &lt; 1e-04 ***
+nodefactor.Species.Crocidura spp          1.672   0.960    2.914  0.06943 .  
+nodefactor.Species.Mastomys natalensis    1.060   0.595    1.890  0.84299    
+nodefactor.Species.Praomys spp            2.329   1.339    4.049  0.00274 ** 
+nodefactor.Species.Lophuromys sikapusi    1.861   1.045    3.312  0.03477 *  
+nodefactor.Species.Mus musculus           0.244   0.096    0.624  0.00321 ** 
+nodefactor.Species.Rattus rattus          1.067   0.564    2.019  0.84250    
+nodefactor.Species.Mus minutoides         1.964   1.091    3.536  0.02449 *  
+nodematch.Species.Crocidura spp           1.679   0.814    3.464  0.16041    
+nodematch.Species.Mastomys natalensis    10.975   5.348   22.526  &lt; 1e-04 ***
+nodematch.Species.Praomys spp             3.445   1.892    6.272  &lt; 1e-04 ***
+nodematch.Species.Lophuromys sikapusi     3.069   1.267    7.435  0.01302 *  
+nodematch.Species.Mus musculus         1530.162 300.447 7793.025  &lt; 1e-04 ***
+nodematch.Species.Rattus rattus          13.890   4.974   38.790  &lt; 1e-04 ***
+nodematch.Species.Mus minutoides          2.185   0.722    6.612  0.16645    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   3866  on 84651  degrees of freedom
+ 
+AIC: 3896  BIC: 4036  (Smaller is better. MC Std. Err. = 0)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>homophily_2 <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">nodefactor</span>(<span class="st">"Serostatus"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Positive"</span>)) <span class="sc">+</span> <span class="fu">nodematch</span>(<span class="st">"Serostatus"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Positive"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):
+Evaluating the predictor and response matrix.
+Maximizing the pseudolikelihood.
+Finished MPLE.
+Stopping at the initial estimate.
+Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(homophily_2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = rodent_net ~ edges + nodefactor("Serostatus", 
+    levels = c("Positive")) + nodematch("Serostatus", levels = c("Positive")))
+
+Maximum Likelihood Results:
+
+                               Estimate Std. Error MCMC %    Wald    OR Lower
+edges                          -5.47118    0.05593      0 -97.819 0.004 0.004
+nodefactor.Serostatus.Positive -0.66043    0.24916      0  -2.651 0.517 0.317
+nodematch.Serostatus            1.55029    1.11545      0   1.390 4.713 0.529
+                                Upper Pr(&gt;|z|)    
+edges                           0.005  &lt; 1e-04 ***
+nodefactor.Serostatus.Positive  0.842  0.00803 ** 
+nodematch.Serostatus           41.954  0.16458    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   4411  on 84663  degrees of freedom
+ 
+AIC: 4417  BIC: 4445  (Smaller is better. MC Std. Err. = 0)</code></pre>
+</div>
+</div>
+<ol type="1">
+<li>Compared to the reference species of other species, all species except <em>Mus musculus</em> have a higher odds of forming a tie when taking into account homophily. The values for homophily suggest that <em>Mus musculus</em>, <em>Mastomys natalensis</em> and <em>Rattus rattus</em> are the most likely to form ties amongst individuals of the same species.</li>
+<li>Compared to the reference level of negative serology for <em>Lassa mammarenavirus</em>, rodents that are positive have lower odds of forming ties with other individuals, with rodents of the same status having increased odds of forming a tie.</li>
+</ol>
+<section id="predicting-ties-1" class="level3">
+<h3 class="anchored" data-anchor-id="predicting-ties-1">Predicting ties</h3>
+<p>The probability of ties between network members can be calculated for the differential homophily models.</p>
+<ol type="1">
+<li>Species model</li>
+</ol>
+<!-- -->
+<ol start="4" type="i">
+<li>A <em>Mus musculus</em> rodent and another <em>Mus musculus</em> = <span class="math inline">\(\text{logistic}(-6.90 * 1 + -1.41 * 2 + 7.33 * 1) = 0.084\)</span></li>
+<li>A <em>Mus musculus</em> rodent and a <em>Mastomys natalensis</em> = <span class="math inline">\(\text{logistic}(-6.90 * 1 + -1.41 * 1 + 0.058 * 1 + 7.33 * 0 + 2.37 * 0) = 0.00026\)</span></li>
+<li>A <em>Mastomys natalensis</em> rodent and another <em>Mastomys natalensis</em> = <span class="math inline">\(\text{logistic}(-6.90 * 1 + 0.058 * 2 + 2.37 * 1) = 0.012\)</span></li>
+</ol>
+<!-- -->
+<ol start="2" type="1">
+<li>Serostatus model</li>
+</ol>
+<!-- -->
+<ol start="4" type="i">
+<li>A rodent with negative serology for <em>Lassa mammarenavirus</em> with another = <span class="math inline">\(\text{logistic}(-5.47 * 1 + 1.55 * 1) = 0.019\)</span></li>
+<li>A rodent with negative serology for <em>Lassa mammarenavirus</em> with one that is positive = <span class="math inline">\(\text{logistic}(-5.47 * 1 + -0.66 * 1 + 1.55 * 0) = 0.002\)</span></li>
+<li>A rodent with positive serology for <em>Lassa mammarenavirus</em> with another = <span class="math inline">\(\text{logistic}(-5.47 * 1 + -0.66 * 2 + 1.55 * 1) = 0.0053\)</span></li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>homophily_species_4 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">6.90</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">1.41</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="fl">7.33</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>homophily_species_5 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">6.90</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">1.41</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.058</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">7.33</span> <span class="sc">*</span> <span class="dv">0</span> <span class="sc">+</span> <span class="fl">2.37</span> <span class="sc">*</span> <span class="dv">0</span>))</span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>homophily_species_6 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">6.90</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.058</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="fl">2.37</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a>homophily_serostatus_4 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">5.47</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.55</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb72-6"><a href="#cb72-6" aria-hidden="true" tabindex="-1"></a>homophily_serostatus_5 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">5.47</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.66</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.55</span> <span class="sc">*</span> <span class="dv">0</span>))</span>
+<span id="cb72-7"><a href="#cb72-7" aria-hidden="true" tabindex="-1"></a>homophily_serostatus_6 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">5.47</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.66</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="fl">1.55</span> <span class="sc">*</span> <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="additional-terms" class="level2">
+<h2 class="anchored" data-anchor-id="additional-terms">Additional terms</h2>
+<p>Landuse type, village location (Urban/Rural) and Season are likely important components of these models. We can add Landuse type and village location in as <code>nodematch</code> terms as there is expected to be clustering of species or homophily within these locations. Season may or may not be a clustering term as it may be that all species respond to changing seasons in the same way. For the first model season will be added in as <code>nodefactor</code>, and for the second <code>nodematch</code>. The model with the lowest AIC will then be used.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>add_terms_species_1 <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges <span class="sc">+</span> </span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodefactor</span>(<span class="st">"Species"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Crocidura spp"</span>, <span class="st">"Mastomys natalensis"</span>, <span class="st">"Praomys spp"</span>, <span class="st">"Lophuromys sikapusi"</span>, <span class="st">"Mus musculus"</span>, <span class="st">"Rattus rattus"</span>, <span class="st">"Mus minutoides"</span>)) <span class="sc">+</span></span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Species"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Crocidura spp"</span>, <span class="st">"Mastomys natalensis"</span>, <span class="st">"Praomys spp"</span>, <span class="st">"Lophuromys sikapusi"</span>, <span class="st">"Mus musculus"</span>, <span class="st">"Rattus rattus"</span>, <span class="st">"Mus minutoides"</span>), <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodefactor</span>(<span class="st">"Season"</span>, <span class="at">levels =</span> <span class="st">"Dry"</span>) <span class="sc">+</span></span>
+<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Village_loc"</span>, <span class="at">levels =</span>  <span class="st">"Rural"</span>, <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Landuse"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Agriculture"</span>, <span class="st">"Village"</span>), <span class="at">diff =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Evaluating the predictor and response matrix.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Maximizing the pseudolikelihood.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Finished MPLE.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Stopping at the initial estimate.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(add_terms_species_1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = rodent_net ~ edges + nodefactor("Species", levels = c("Crocidura spp", 
+    "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", 
+    "Mus musculus", "Rattus rattus", "Mus minutoides")) + nodematch("Species", 
+    levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", 
+        "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", 
+        "Mus minutoides"), diff = TRUE) + nodefactor("Season", 
+    levels = "Dry") + nodematch("Village_loc", levels = "Rural", 
+    diff = TRUE) + nodematch("Landuse", levels = c("Agriculture", 
+    "Village"), diff = TRUE))
+
+Maximum Likelihood Results:
+
+                                        Estimate Std. Error MCMC %    Wald
+edges                                  -11.09536    0.77154      0 -14.381
+nodefactor.Species.Crocidura spp         0.25999    0.28486      0   0.913
+nodefactor.Species.Mastomys natalensis  -0.29880    0.29668      0  -1.007
+nodefactor.Species.Praomys spp           0.54939    0.28366      0   1.937
+nodefactor.Species.Lophuromys sikapusi   0.11980    0.29596      0   0.405
+nodefactor.Species.Mus musculus          0.38418    0.70792      0   0.543
+nodefactor.Species.Rattus rattus         0.17667    0.34520      0   0.512
+nodefactor.Species.Mus minutoides        0.24358    0.30281      0   0.804
+nodematch.Species.Crocidura spp          0.51860    0.37046      0   1.400
+nodematch.Species.Mastomys natalensis    2.32284    0.37031      0   6.273
+nodematch.Species.Praomys spp            1.20905    0.30756      0   3.931
+nodematch.Species.Lophuromys sikapusi    1.02382    0.45287      0   2.261
+nodematch.Species.Mus musculus           3.82830    0.98195      0   3.899
+nodematch.Species.Rattus rattus          0.99764    0.53484      0   1.865
+nodematch.Species.Mus minutoides         0.59432    0.56693      0   1.048
+nodefactor.Season.Dry                    0.31376    0.09256      0   3.390
+nodematch.Village_loc.Rural              1.79321    0.50951      0   3.519
+nodematch.Landuse.Agriculture            3.12756    0.34596      0   9.040
+nodematch.Landuse.Village                3.89481    0.38078      0  10.228
+                                           OR  Lower   Upper Pr(&gt;|z|)    
+edges                                   0.000  0.000   0.000  &lt; 1e-04 ***
+nodefactor.Species.Crocidura spp        1.297  0.742   2.267 0.361404    
+nodefactor.Species.Mastomys natalensis  0.742  0.415   1.327 0.313852    
+nodefactor.Species.Praomys spp          1.732  0.993   3.020 0.052772 .  
+nodefactor.Species.Lophuromys sikapusi  1.127  0.631   2.014 0.685629    
+nodefactor.Species.Mus musculus         1.468  0.367   5.881 0.587342    
+nodefactor.Species.Rattus rattus        1.193  0.607   2.347 0.608789    
+nodefactor.Species.Mus minutoides       1.276  0.705   2.310 0.421166    
+nodematch.Species.Crocidura spp         1.680  0.813   3.472 0.161552    
+nodematch.Species.Mastomys natalensis  10.205  4.938  21.087  &lt; 1e-04 ***
+nodematch.Species.Praomys spp           3.350  1.834   6.122  &lt; 1e-04 ***
+nodematch.Species.Lophuromys sikapusi   2.784  1.146   6.763 0.023776 *  
+nodematch.Species.Mus musculus         45.984  6.710 315.110  &lt; 1e-04 ***
+nodematch.Species.Rattus rattus         2.712  0.951   7.736 0.062137 .  
+nodematch.Species.Mus minutoides        1.812  0.596   5.504 0.294496    
+nodefactor.Season.Dry                   1.369  1.142   1.641 0.000699 ***
+nodematch.Village_loc.Rural             6.009  2.213  16.311 0.000432 ***
+nodematch.Landuse.Agriculture          22.818 11.582  44.955  &lt; 1e-04 ***
+nodematch.Landuse.Village              49.146 23.301 103.662  &lt; 1e-04 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   3563  on 84647  degrees of freedom
+ 
+AIC: 3601  BIC: 3779  (Smaller is better. MC Std. Err. = 0)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a>add_terms_species_2 <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges <span class="sc">+</span> </span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodefactor</span>(<span class="st">"Species"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Crocidura spp"</span>, <span class="st">"Mastomys natalensis"</span>, <span class="st">"Praomys spp"</span>, <span class="st">"Lophuromys sikapusi"</span>, <span class="st">"Mus musculus"</span>, <span class="st">"Rattus rattus"</span>, <span class="st">"Mus minutoides"</span>)) <span class="sc">+</span></span>
+<span id="cb82-3"><a href="#cb82-3" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Species"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Crocidura spp"</span>, <span class="st">"Mastomys natalensis"</span>, <span class="st">"Praomys spp"</span>, <span class="st">"Lophuromys sikapusi"</span>, <span class="st">"Mus musculus"</span>, <span class="st">"Rattus rattus"</span>, <span class="st">"Mus minutoides"</span>), <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb82-4"><a href="#cb82-4" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Season"</span>, <span class="at">levels =</span> <span class="st">"Dry"</span>, <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb82-5"><a href="#cb82-5" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Village_loc"</span>, <span class="at">levels =</span>  <span class="st">"Rural"</span>, <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb82-6"><a href="#cb82-6" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Landuse"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Agriculture"</span>, <span class="st">"Village"</span>), <span class="at">diff =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):
+Evaluating the predictor and response matrix.
+Maximizing the pseudolikelihood.
+Finished MPLE.
+Stopping at the initial estimate.
+Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(add_terms_species_2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = rodent_net ~ edges + nodefactor("Species", levels = c("Crocidura spp", 
+    "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", 
+    "Mus musculus", "Rattus rattus", "Mus minutoides")) + nodematch("Species", 
+    levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", 
+        "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", 
+        "Mus minutoides"), diff = TRUE) + nodematch("Season", 
+    levels = "Dry", diff = TRUE) + nodematch("Village_loc", levels = "Rural", 
+    diff = TRUE) + nodematch("Landuse", levels = c("Agriculture", 
+    "Village"), diff = TRUE))
+
+Maximum Likelihood Results:
+
+                                       Estimate Std. Error MCMC %    Wald
+edges                                  -11.3822     0.7680      0 -14.822
+nodefactor.Species.Crocidura spp         0.3789     0.2848      0   1.330
+nodefactor.Species.Mastomys natalensis  -0.2849     0.2969      0  -0.960
+nodefactor.Species.Praomys spp           0.5613     0.2839      0   1.977
+nodefactor.Species.Lophuromys sikapusi   0.1472     0.2965      0   0.496
+nodefactor.Species.Mus musculus          0.4184     0.7074      0   0.591
+nodefactor.Species.Rattus rattus         0.1991     0.3466      0   0.575
+nodefactor.Species.Mus minutoides        0.3228     0.3031      0   1.065
+nodematch.Species.Crocidura spp          0.5198     0.3709      0   1.401
+nodematch.Species.Mastomys natalensis    2.3481     0.3706      0   6.336
+nodematch.Species.Praomys spp            1.2223     0.3081      0   3.967
+nodematch.Species.Lophuromys sikapusi    1.0024     0.4536      0   2.210
+nodematch.Species.Mus musculus           4.0129     0.9816      0   4.088
+nodematch.Species.Rattus rattus          0.9623     0.5364      0   1.794
+nodematch.Species.Mus minutoides         0.6006     0.5678      0   1.058
+nodematch.Season.Dry                     1.4181     0.1400      0  10.133
+nodematch.Village_loc.Rural              1.4966     0.5101      0   2.934
+nodematch.Landuse.Agriculture            3.1286     0.3463      0   9.034
+nodematch.Landuse.Village                3.9227     0.3811      0  10.293
+                                           OR  Lower   Upper Pr(&gt;|z|)    
+edges                                   0.000  0.000   0.000  &lt; 1e-04 ***
+nodefactor.Species.Crocidura spp        1.461  0.836   2.553  0.18350    
+nodefactor.Species.Mastomys natalensis  0.752  0.420   1.346  0.33723    
+nodefactor.Species.Praomys spp          1.753  1.005   3.058  0.04804 *  
+nodefactor.Species.Lophuromys sikapusi  1.159  0.648   2.072  0.61955    
+nodefactor.Species.Mus musculus         1.519  0.380   6.080  0.55425    
+nodefactor.Species.Rattus rattus        1.220  0.619   2.407  0.56561    
+nodefactor.Species.Mus minutoides       1.381  0.762   2.501  0.28690    
+nodematch.Species.Crocidura spp         1.682  0.813   3.479  0.16113    
+nodematch.Species.Mastomys natalensis  10.466  5.062  21.639  &lt; 1e-04 ***
+nodematch.Species.Praomys spp           3.395  1.856   6.210  &lt; 1e-04 ***
+nodematch.Species.Lophuromys sikapusi   2.725  1.120   6.629  0.02713 *  
+nodematch.Species.Mus musculus         55.309  8.077 378.722  &lt; 1e-04 ***
+nodematch.Species.Rattus rattus         2.618  0.915   7.490  0.07282 .  
+nodematch.Species.Mus minutoides        1.823  0.599   5.549  0.29017    
+nodematch.Season.Dry                    4.129  3.139   5.433  &lt; 1e-04 ***
+nodematch.Village_loc.Rural             4.466  1.643  12.138  0.00335 ** 
+nodematch.Landuse.Agriculture          22.841 11.586  45.029  &lt; 1e-04 ***
+nodematch.Landuse.Village              50.534 23.944 106.656  &lt; 1e-04 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   3455  on 84647  degrees of freedom
+ 
+AIC: 3493  BIC: 3671  (Smaller is better. MC Std. Err. = 0)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a>add_terms_species_3 <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges <span class="sc">+</span> </span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodefactor</span>(<span class="st">"Species"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Crocidura spp"</span>, <span class="st">"Mastomys natalensis"</span>, <span class="st">"Praomys spp"</span>, <span class="st">"Lophuromys sikapusi"</span>, <span class="st">"Mus musculus"</span>, <span class="st">"Rattus rattus"</span>, <span class="st">"Mus minutoides"</span>)) <span class="sc">+</span></span>
+<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Species"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Crocidura spp"</span>, <span class="st">"Mastomys natalensis"</span>, <span class="st">"Praomys spp"</span>, <span class="st">"Lophuromys sikapusi"</span>, <span class="st">"Mus musculus"</span>, <span class="st">"Rattus rattus"</span>, <span class="st">"Mus minutoides"</span>), <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Season"</span>, <span class="at">levels =</span> <span class="st">"Dry"</span>, <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb86-5"><a href="#cb86-5" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Village_loc"</span>, <span class="at">levels =</span>  <span class="st">"Rural"</span>, <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb86-6"><a href="#cb86-6" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">nodematch</span>(<span class="st">"Landuse"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Agriculture"</span>, <span class="st">"Village"</span>), <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb86-7"><a href="#cb86-7" aria-hidden="true" tabindex="-1"></a>                              <span class="fu">isolates</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):
+Evaluating the predictor and response matrix.
+Maximizing the pseudolikelihood.
+Finished MPLE.
+Starting Monte Carlo maximum likelihood estimation (MCMLE):
+Iteration 1 of at most 60:
+Optimizing with step length 0.2335.
+The log-likelihood improved by 2.1832.
+Estimating equations are not within tolerance region.
+Iteration 2 of at most 60:
+Optimizing with step length 0.4221.
+The log-likelihood improved by 1.7729.
+Estimating equations are not within tolerance region.
+Iteration 3 of at most 60:
+Optimizing with step length 0.7529.
+The log-likelihood improved by 2.4503.
+Estimating equations are not within tolerance region.
+Iteration 4 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.9085.
+Estimating equations are not within tolerance region.
+Iteration 5 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.1081.
+Estimating equations are not within tolerance region.
+Iteration 6 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.1686.
+Estimating equations are not within tolerance region.
+Iteration 7 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.7352.
+Estimating equations are not within tolerance region.
+Estimating equations did not move closer to tolerance region more than 1 time(s) in 4 steps; increasing sample size.
+Iteration 8 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 1.3731.
+Estimating equations are not within tolerance region.
+Iteration 9 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.2448.
+Estimating equations are not within tolerance region.
+Iteration 10 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.2894.
+Estimating equations are not within tolerance region.
+Iteration 11 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.3190.
+Estimating equations are not within tolerance region.
+Estimating equations did not move closer to tolerance region more than 1 time(s) in 4 steps; increasing sample size.
+Iteration 12 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.1580.
+Estimating equations are not within tolerance region.
+Iteration 13 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.0436.
+Convergence test p-value: 0.9992. Not converged with 99% confidence; increasing sample size.
+Iteration 14 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.0581.
+Convergence test p-value: 0.9824. Not converged with 99% confidence; increasing sample size.
+Iteration 15 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.0249.
+Convergence test p-value: 0.9006. Not converged with 99% confidence; increasing sample size.
+Iteration 16 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.0197.
+Convergence test p-value: 0.1832. Not converged with 99% confidence; increasing sample size.
+Iteration 17 of at most 60:
+Optimizing with step length 1.0000.
+The log-likelihood improved by 0.0155.
+Convergence test p-value: 0.0040. Converged with 99% confidence.
+Finished MCMLE.
+Evaluating log-likelihood at the estimate. Fitting the dyad-independent submodel...
+Bridging between the dyad-independent submodel and the full model...
+Setting up bridge sampling...
+Using 16 bridges: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 .
+Bridging finished.
+This model was fit using MCMC.  To examine model diagnostics and check
+for degeneracy, use the mcmc.diagnostics() function.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(add_terms_species_3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = rodent_net ~ edges + nodefactor("Species", levels = c("Crocidura spp", 
+    "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", 
+    "Mus musculus", "Rattus rattus", "Mus minutoides")) + nodematch("Species", 
+    levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", 
+        "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", 
+        "Mus minutoides"), diff = TRUE) + nodematch("Season", 
+    levels = "Dry", diff = TRUE) + nodematch("Village_loc", levels = "Rural", 
+    diff = TRUE) + nodematch("Landuse", levels = c("Agriculture", 
+    "Village"), diff = TRUE) + isolates())
+
+Monte Carlo Maximum Likelihood Results:
+
+                                       Estimate Std. Error MCMC %    Wald
+edges                                  -9.87261    0.74451      0 -13.260
+nodefactor.Species.Crocidura spp        0.24284    0.25420      0   0.955
+nodefactor.Species.Mastomys natalensis -0.41497    0.26711      0  -1.554
+nodefactor.Species.Praomys spp          0.32512    0.25390      0   1.281
+nodefactor.Species.Lophuromys sikapusi  0.03628    0.26320      0   0.138
+nodefactor.Species.Mus musculus        -0.33867    0.67966      0  -0.498
+nodefactor.Species.Rattus rattus        0.08885    0.30974      0   0.287
+nodefactor.Species.Mus minutoides       0.20587    0.26696      0   0.771
+nodematch.Species.Crocidura spp         0.52790    0.37424      0   1.411
+nodematch.Species.Mastomys natalensis   2.32091    0.37483      0   6.192
+nodematch.Species.Praomys spp           1.21621    0.30505      0   3.987
+nodematch.Species.Lophuromys sikapusi   1.01413    0.44501      0   2.279
+nodematch.Species.Mus musculus          4.32228    0.96548      0   4.477
+nodematch.Species.Rattus rattus         0.94864    0.51671      0   1.836
+nodematch.Species.Mus minutoides        0.61480    0.58292      0   1.055
+nodematch.Season.Dry                    1.11737    0.13556      0   8.243
+nodematch.Village_loc.Rural             1.11932    0.47311      0   2.366
+nodematch.Landuse.Agriculture           2.87013    0.34399      0   8.344
+nodematch.Landuse.Village               3.75719    0.37299      0  10.073
+isolates                                0.93015    0.17817      0   5.221
+                                           OR  Lower   Upper Pr(&gt;|z|)    
+edges                                   0.000  0.000   0.000   &lt;1e-04 ***
+nodefactor.Species.Crocidura spp        1.275  0.775   2.098   0.3394    
+nodefactor.Species.Mastomys natalensis  0.660  0.391   1.115   0.1203    
+nodefactor.Species.Praomys spp          1.384  0.842   2.277   0.2004    
+nodefactor.Species.Lophuromys sikapusi  1.037  0.619   1.737   0.8904    
+nodefactor.Species.Mus musculus         0.713  0.188   2.701   0.6183    
+nodefactor.Species.Rattus rattus        1.093  0.596   2.006   0.7742    
+nodefactor.Species.Mus minutoides       1.229  0.728   2.073   0.4406    
+nodematch.Species.Crocidura spp         1.695  0.814   3.530   0.1584    
+nodematch.Species.Mastomys natalensis  10.185  4.885  21.234   &lt;1e-04 ***
+nodematch.Species.Praomys spp           3.374  1.856   6.136   &lt;1e-04 ***
+nodematch.Species.Lophuromys sikapusi   2.757  1.152   6.595   0.0227 *  
+nodematch.Species.Mus musculus         75.360 11.358 500.003   &lt;1e-04 ***
+nodematch.Species.Rattus rattus         2.582  0.938   7.109   0.0664 .  
+nodematch.Species.Mus minutoides        1.849  0.590   5.797   0.2916    
+nodematch.Season.Dry                    3.057  2.344   3.987   &lt;1e-04 ***
+nodematch.Village_loc.Rural             3.063  1.212   7.742   0.0180 *  
+nodematch.Landuse.Agriculture          17.639  8.988  34.617   &lt;1e-04 ***
+nodematch.Landuse.Village              42.828 20.617  88.966   &lt;1e-04 ***
+isolates                                2.535  1.788   3.594   &lt;1e-04 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   3428  on 84646  degrees of freedom
+ 
+AIC: 3468  BIC: 3655  (Smaller is better. MC Std. Err. = 0.1499)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a><span class="co"># add_terms_species_4 &lt;- ergm(rodent_net ~ edges + </span></span>
+<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a><span class="co">#                               nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +</span></span>
+<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a><span class="co">#                               nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +</span></span>
+<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a><span class="co">#                               nodematch("Season", levels = "Dry", diff = TRUE) +</span></span>
+<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a><span class="co">#                               nodematch("Village_loc", levels =  "Rural", diff = TRUE) +</span></span>
+<span id="cb90-7"><a href="#cb90-7" aria-hidden="true" tabindex="-1"></a><span class="co">#                               nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE) +</span></span>
+<span id="cb90-8"><a href="#cb90-8" aria-hidden="true" tabindex="-1"></a><span class="co">#                               dsp(d = 1:4))</span></span>
+<span id="cb90-9"><a href="#cb90-9" aria-hidden="true" tabindex="-1"></a><span class="co"># summary.ergm.david(add_terms_species_4)</span></span>
+<span id="cb90-10"><a href="#cb90-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb90-11"><a href="#cb90-11" aria-hidden="true" tabindex="-1"></a>add_terms_serology_1 <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges <span class="sc">+</span> </span>
+<span id="cb90-12"><a href="#cb90-12" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">nodefactor</span>(<span class="st">"Serostatus"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Positive"</span>)) <span class="sc">+</span> </span>
+<span id="cb90-13"><a href="#cb90-13" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">nodematch</span>(<span class="st">"Serostatus"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Positive"</span>)) <span class="sc">+</span></span>
+<span id="cb90-14"><a href="#cb90-14" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">nodefactor</span>(<span class="st">"Season"</span>, <span class="at">levels =</span> <span class="st">"Dry"</span>) <span class="sc">+</span></span>
+<span id="cb90-15"><a href="#cb90-15" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">nodematch</span>(<span class="st">"Village_loc"</span>, <span class="at">levels =</span>  <span class="st">"Rural"</span>, <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb90-16"><a href="#cb90-16" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">nodematch</span>(<span class="st">"Landuse"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Agriculture"</span>, <span class="st">"Village"</span>), <span class="at">diff =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):
+Evaluating the predictor and response matrix.
+Maximizing the pseudolikelihood.
+Finished MPLE.
+Stopping at the initial estimate.
+Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(add_terms_serology_1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = rodent_net ~ edges + nodefactor("Serostatus", 
+    levels = c("Positive")) + nodematch("Serostatus", levels = c("Positive")) + 
+    nodefactor("Season", levels = "Dry") + nodematch("Village_loc", 
+    levels = "Rural", diff = TRUE) + nodematch("Landuse", levels = c("Agriculture", 
+    "Village"), diff = TRUE))
+
+Maximum Likelihood Results:
+
+                               Estimate Std. Error MCMC %    Wald     OR  Lower
+edges                          -8.90632    0.36343      0 -24.506  0.000  0.000
+nodefactor.Serostatus.Positive -0.72431    0.25074      0  -2.889  0.485  0.296
+nodematch.Serostatus            1.60962    1.11969      0   1.438  5.001  0.557
+nodefactor.Season.Dry           0.12515    0.08805      0   1.421  1.133  0.954
+nodematch.Village_loc.Rural     0.41536    0.15681      0   2.649  1.515  1.114
+nodematch.Landuse.Agriculture   3.34100    0.34143      0   9.785 28.247 14.466
+nodematch.Landuse.Village       4.51752    0.34819      0  12.974 91.608 46.297
+                                 Upper Pr(&gt;|z|)    
+edges                            0.000  &lt; 1e-04 ***
+nodefactor.Serostatus.Positive   0.792  0.00387 ** 
+nodematch.Serostatus            44.890  0.15056    
+nodefactor.Season.Dry            1.347  0.15520    
+nodematch.Village_loc.Rural      2.060  0.00808 ** 
+nodematch.Landuse.Agriculture   55.158  &lt; 1e-04 ***
+nodematch.Landuse.Village      181.265  &lt; 1e-04 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   3925  on 84659  degrees of freedom
+ 
+AIC: 3939  BIC: 4005  (Smaller is better. MC Std. Err. = 0)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a>add_terms_serology_2 <span class="ot">&lt;-</span> <span class="fu">ergm</span>(rodent_net <span class="sc">~</span> edges <span class="sc">+</span> </span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">nodefactor</span>(<span class="st">"Serostatus"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Positive"</span>)) <span class="sc">+</span> </span>
+<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">nodematch</span>(<span class="st">"Serostatus"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Positive"</span>)) <span class="sc">+</span></span>
+<span id="cb94-4"><a href="#cb94-4" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">nodematch</span>(<span class="st">"Season"</span>, <span class="at">levels =</span> <span class="st">"Dry"</span>, <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb94-5"><a href="#cb94-5" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">nodematch</span>(<span class="st">"Village_loc"</span>, <span class="at">levels =</span>  <span class="st">"Rural"</span>, <span class="at">diff =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb94-6"><a href="#cb94-6" aria-hidden="true" tabindex="-1"></a>                               <span class="fu">nodematch</span>(<span class="st">"Landuse"</span>, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Agriculture"</span>, <span class="st">"Village"</span>), <span class="at">diff =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Starting maximum pseudolikelihood estimation (MPLE):
+Evaluating the predictor and response matrix.
+Maximizing the pseudolikelihood.
+Finished MPLE.
+Stopping at the initial estimate.
+Evaluating log-likelihood at the estimate. </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary.ergm.david</span>(add_terms_serology_2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+ergm(formula = rodent_net ~ edges + nodefactor("Serostatus", 
+    levels = c("Positive")) + nodematch("Serostatus", levels = c("Positive")) + 
+    nodematch("Season", levels = "Dry", diff = TRUE) + nodematch("Village_loc", 
+    levels = "Rural", diff = TRUE) + nodematch("Landuse", levels = c("Agriculture", 
+    "Village"), diff = TRUE))
+
+Maximum Likelihood Results:
+
+                               Estimate Std. Error MCMC %    Wald     OR  Lower
+edges                          -9.14656    0.35608      0 -25.687  0.000  0.000
+nodefactor.Serostatus.Positive -0.60038    0.25066      0  -2.395  0.549  0.336
+nodematch.Serostatus            1.65640    1.12141      0   1.477  5.240  0.582
+nodematch.Season.Dry            1.13171    0.12497      0   9.056  3.101  2.427
+nodematch.Village_loc.Rural     0.06268    0.15794      0   0.397  1.065  0.781
+nodematch.Landuse.Agriculture   3.37595    0.34169      0   9.880 29.252 14.973
+nodematch.Landuse.Village       4.51723    0.34834      0  12.968 91.582 46.270
+                                 Upper Pr(&gt;|z|)    
+edges                            0.000   &lt;1e-04 ***
+nodefactor.Serostatus.Positive   0.897   0.0166 *  
+nodematch.Serostatus            47.199   0.1397    
+nodematch.Season.Dry             3.962   &lt;1e-04 ***
+nodematch.Village_loc.Rural      1.451   0.6915    
+nodematch.Landuse.Agriculture   57.149   &lt;1e-04 ***
+nodematch.Landuse.Village      181.269   &lt;1e-04 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+     Null Deviance: 117372  on 84666  degrees of freedom
+ Residual Deviance:   3837  on 84659  degrees of freedom
+ 
+AIC: 3851  BIC: 3916  (Smaller is better. MC Std. Err. = 0)</code></pre>
+</div>
+</div>
+<p>For both of these more complex models the inclusion of the additional terms as differential homophily terms improves model fit. We can repeat the above equations to calculate the probability of a tie.</p>
+<section id="predicting-ties-2" class="level3">
+<h3 class="anchored" data-anchor-id="predicting-ties-2">Predicting ties</h3>
+<p>The probability of ties between network members can be calculated for the differential homophily models.</p>
+<ol type="1">
+<li>Species model</li>
+</ol>
+<!-- -->
+<ol start="7" type="i">
+<li>A <em>Mus musculus</em> rodent and another <em>Mus musculus</em> in an urban setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-11.38 * 1 + 0.42 * 2 + 4.01 * 1 + 1.42 * 1 + 3.92 * 1) = 0.23\)</span></li>
+<li>A <em>Mus musculus</em> rodent and a <em>Mastomys natalensis</em> in an urban setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-11.38 * 1 + 0.42 * 1 + -0.28 * 1 + 1.42 * 1 + 3.92 * 1) = 0.0027\)</span></li>
+<li>A <em>Mus musculus</em> rodent and a <em>Mastomys natalensis</em> in a rural setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-11.38 * 1 + 0.42 * 1 + -0.28 * 1 + 1.5 * 1 + 1.42 * 1 + 3.92 * 1) = 0.012\)</span></li>
+<li>A <em>Mastomys natalensis</em> rodent and another <em>Mastomys natalensis</em> in an urban setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-11.38 * 1 + -0.28 * 2 + 2.34 * 1 + 1.42 * 1 + 3.92 * 1) = 0.014\)</span></li>
+<li>A <em>Mastomys natalensis</em> rodent and another <em>Mastomys natalensis</em> in a rural setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-11.38 * 1 + -0.28 * 2 + 2.34 * 1 + 1.5 * 1 + 1.42 * 1 + 3.92 * 1) = 0.059\)</span></li>
+<li>A <em>Mastomys natalensis</em> rodent and another <em>Mastomys natalensis</em> in a rural setting, during the dry season, within agricultural land = <span class="math inline">\(\text{logistic}(-11.38 * 1 + -0.28 * 2 + 2.34 * 1 + 1.5 * 1 + 1.42 * 1 + 3.12 * 1) = 0.028\)</span></li>
+</ol>
+<!-- -->
+<p>These probabilities show that two <em>Mus musculus</em> in urban village settings have the greatest odds of coming into contact with another individual of the same species, this is much greater than the rates of contacts between a <em>Mus musculus</em> and a <em>Mastomys natalensis</em> as well as the contact rates between two <em>Mastomys natalensis</em> all other things being equal. We also see that two <em>Mastomys natalensis</em> have greater odds of contact within the rural villages compared to urban villages, and within the village compared to in agricultural land.</p>
+<ol start="2" type="1">
+<li>Serostatus model</li>
+</ol>
+<!-- -->
+<ol start="7" type="i">
+<li>A rodent with negative serology for <em>Lassa mammarenavirus</em> with another in an urban setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-9.15 * 1 + 1.66 * 1 + 1.13 * 1 + 4.51 * 1) = 0.14\)</span></li>
+<li>A rodent with negative serology for <em>Lassa mammarenavirus</em> with one that is positive in an urban setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-9.15 * 1 + -0.6 * 1 + 1.13 * 1 + 4.51 * 1) = 0.016\)</span></li>
+<li>A rodent with positive serology for <em>Lassa mammarenavirus</em> with another in an urban setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-9.15 * 1 + -0.6 * 2 + 1.13 * 1 + 4.51 * 1) = 0.0089\)</span></li>
+<li>A rodent with negative serology for <em>Lassa mammarenavirus</em> with another in a rural setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-9.15 * 1 + 1.66 * 1 + 0.06 * 1 + 1.13 * 1 + 4.51 * 1) = 0.14\)</span></li>
+<li>A rodent with negative serology for <em>Lassa mammarenavirus</em> with one that is positive in a rural setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-9.15 * 1 + -0.6 * 1 + 0.06 * 1 + 1.13 * 1 + 4.51 * 1) = 0.017\)</span></li>
+<li>A rodent with positive serology for <em>Lassa mammarenavirus</em> with another in a rural setting, during the dry season, within the village = <span class="math inline">\(\text{logistic}(-9.15 * 1 + -0.6 * 2 + 0.06 * 1 + 1.13 * 1 + 4.51 * 1) = 0.0095\)</span></li>
+</ol>
+<p>These probabilities show that the odds of contact between negative rodents is much greater (driven by the finding that most rodents are negative), than that involving a positive rodent. The probabilities of contact among positive rodents within both an urban setting and rural setting are similar.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a>homophily_species_7 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">11.38</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.42</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="fl">4.01</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.42</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">3.92</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a>homophily_species_8 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">11.38</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.42</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.28</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.42</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">3.92</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a>homophily_species_9 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">11.38</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.42</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.28</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.5</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.42</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">3.92</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a>homophily_species_10 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">11.38</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.28</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="fl">2.34</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.42</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">3.92</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a>homophily_species_11 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">11.38</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.28</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="fl">2.34</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.5</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.42</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">3.92</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a>homophily_species_12 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">11.38</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.28</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="fl">2.34</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.5</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.42</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">3.12</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-7"><a href="#cb98-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-8"><a href="#cb98-8" aria-hidden="true" tabindex="-1"></a>homophily_serostatus_7 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">9.15</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.66</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.13</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">4.51</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-9"><a href="#cb98-9" aria-hidden="true" tabindex="-1"></a>homophily_serostatus_8 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">9.15</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.6</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.13</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">4.51</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-10"><a href="#cb98-10" aria-hidden="true" tabindex="-1"></a>homophily_serostatus_9 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">9.15</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.6</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="fl">1.13</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">4.51</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-11"><a href="#cb98-11" aria-hidden="true" tabindex="-1"></a>homophily_serostatus_10 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">9.15</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.66</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.06</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.13</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">4.51</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-12"><a href="#cb98-12" aria-hidden="true" tabindex="-1"></a>homophily_serostatus_11 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">9.15</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.6</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.06</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.13</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">4.51</span> <span class="sc">*</span> <span class="dv">1</span>))</span>
+<span id="cb98-13"><a href="#cb98-13" aria-hidden="true" tabindex="-1"></a>homophily_serostatus_12 <span class="ot">&lt;-</span> <span class="fu">plogis</span>(<span class="at">q =</span> (<span class="sc">-</span><span class="fl">9.15</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="sc">-</span><span class="fl">0.6</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="fl">0.06</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">1.13</span> <span class="sc">*</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fl">4.51</span> <span class="sc">*</span> <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="model-fit" class="level2">
+<h2 class="anchored" data-anchor-id="model-fit">Model fit</h2>
+<p>The models so far assume dyadic independence. We can test the fit of these models through various means. First for the species tie model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="co"># First simulate the models</span></span>
+<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a>null_sim <span class="ot">&lt;-</span> <span class="fu">simulate</span>(null_random, <span class="at">verbose =</span> <span class="cn">TRUE</span>, <span class="at">seed =</span> <span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Initializing unconstrained Metropolis-Hastings proposal: 'ergm:MH_TNT'.
+Initializing model...
+Model initialized.
+Starting MCMC iterations to generate 1 network</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a>main_1_sim <span class="ot">&lt;-</span> <span class="fu">simulate</span>(main_effects_1, <span class="at">verbose =</span> <span class="cn">TRUE</span>, <span class="at">seed =</span> <span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Initializing unconstrained Metropolis-Hastings proposal: 'ergm:MH_TNT'.
+Initializing model...
+Model initialized.
+Starting MCMC iterations to generate 1 network</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>homophily_1_sim <span class="ot">&lt;-</span> <span class="fu">simulate</span>(homophily_1, <span class="at">verbose =</span> <span class="cn">TRUE</span>, <span class="at">seed =</span> <span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Initializing unconstrained Metropolis-Hastings proposal: 'ergm:MH_TNT'.
+Initializing model...
+Model initialized.
+Starting MCMC iterations to generate 1 network</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb105"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a>complex_sim_1 <span class="ot">&lt;-</span> <span class="fu">simulate</span>(add_terms_species_1, <span class="at">verbose =</span> <span class="cn">TRUE</span>, <span class="at">seed =</span> <span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Initializing unconstrained Metropolis-Hastings proposal: 'ergm:MH_TNT'.
+Initializing model...
+Model initialized.
+Starting MCMC iterations to generate 1 network</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb107"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a>complex_sim_2 <span class="ot">&lt;-</span> <span class="fu">simulate</span>(add_terms_species_2, <span class="at">verbose =</span> <span class="cn">TRUE</span>, <span class="at">seed =</span> <span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Initializing unconstrained Metropolis-Hastings proposal: 'ergm:MH_TNT'.
+Initializing model...
+Model initialized.
+Starting MCMC iterations to generate 1 network</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a>complex_sim_3 <span class="ot">&lt;-</span> <span class="fu">simulate</span>(add_terms_species_3, <span class="at">verbose =</span> <span class="cn">TRUE</span>, <span class="at">seed =</span> <span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Initializing unconstrained Metropolis-Hastings proposal: 'ergm:MH_TNT'.
+Initializing model...
+Model initialized.
+Starting MCMC iterations to generate 1 network</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a>row_gof <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="fu">summary</span>(rodent_net <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">degree</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>) <span class="sc">+</span> triangle),</span>
+<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">summary</span>(null_sim <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">degree</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>) <span class="sc">+</span> triangle),</span>
+<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">summary</span>(main_1_sim <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">degree</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>) <span class="sc">+</span> triangle),</span>
+<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">summary</span>(homophily_1_sim <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">degree</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>) <span class="sc">+</span> triangle),</span>
+<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">summary</span>(complex_sim_1 <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">degree</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>) <span class="sc">+</span> triangle),</span>
+<span id="cb111-6"><a href="#cb111-6" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">summary</span>(complex_sim_2 <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">degree</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>) <span class="sc">+</span> triangle),</span>
+<span id="cb111-7"><a href="#cb111-7" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">summary</span>(complex_sim_3 <span class="sc">~</span> edges <span class="sc">+</span> <span class="fu">degree</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>) <span class="sc">+</span> triangle))</span>
+<span id="cb111-8"><a href="#cb111-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb111-9"><a href="#cb111-9" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_cols</span>(<span class="at">model =</span> <span class="fu">c</span>(<span class="st">"Observed network"</span>, <span class="st">"Null model"</span>, <span class="st">"Main effects only"</span>, <span class="st">"Homophily only"</span>, <span class="st">"Differential homophily and terms 1"</span>, <span class="st">"Differential homophily and terms 2"</span>, <span class="st">"Differential homophily and isolates"</span>), row_gof,</span>
+<span id="cb111-10"><a href="#cb111-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">aic =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">AIC</span>(null_random)[<span class="dv">1</span>], <span class="fu">AIC</span>(main_effects_1)[<span class="dv">1</span>], <span class="fu">AIC</span>(homophily_1)[<span class="dv">1</span>], <span class="fu">AIC</span>(add_terms_species_1)[<span class="dv">1</span>], <span class="fu">AIC</span>(add_terms_species_2)[<span class="dv">1</span>],</span>
+<span id="cb111-11"><a href="#cb111-11" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">AIC</span>(add_terms_species_3)[<span class="dv">1</span>]),</span>
+<span id="cb111-12"><a href="#cb111-12" aria-hidden="true" tabindex="-1"></a>          <span class="at">bic =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">BIC</span>(null_random)[<span class="dv">1</span>], <span class="fu">BIC</span>(main_effects_1)[<span class="dv">1</span>], <span class="fu">BIC</span>(homophily_1)[<span class="dv">1</span>], <span class="fu">BIC</span>(add_terms_species_1)[<span class="dv">1</span>], <span class="fu">BIC</span>(add_terms_species_2)[<span class="dv">1</span>],</span>
+<span id="cb111-13"><a href="#cb111-13" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">BIC</span>(add_terms_species_3)[<span class="dv">1</span>]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7 x 11
+  model      edges degree0 degree1 degree2 degree3 degree4 degree5 trian~1   aic
+  &lt;chr&gt;      &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;
+1 Observed ~   339     157     111      60      21      19       7     352   NA 
+2 Null model   326      99     121      91      70      22       5       1 4575.
+3 Main effe~   337      99     126      91      47      29      16       0 4307.
+4 Homophily~   308      97     152      86      44      17       9       4 3896.
+5 Different~   328     120     101      94      49      29      12      11 3601.
+6 Different~   314     139      91      83      53      28      11       7 3493.
+7 Different~   349     162      76      58      41      27      29      21 3468.
+# ... with 1 more variable: bic &lt;dbl&gt;, and abbreviated variable name
+#   1: triangle</code></pre>
+</div>
+</div>
+<p>This summarises the simulations from the different models compared to the observed network alongside showing the reducing AIC/BIC as homophily and additional terms are added. These models fail to capture the number of triangles and low degree nodes within the observed network. However, adding dependence terms including GWdegree, GWESP and GWDSP results in a degenerate model.</p>
+</section>
+<section id="cef" class="level2">
+<h2 class="anchored" data-anchor-id="cef">CEF</h2>
+<p>This does not work for the complete model. Despite several attempts and leaving for several days.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a><span class="co"># cefmodel_species &lt;- ergm(rodent_net ~ edges + </span></span>
+<span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a><span class="co">#                            nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +</span></span>
+<span id="cb113-3"><a href="#cb113-3" aria-hidden="true" tabindex="-1"></a><span class="co">#                            nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +</span></span>
+<span id="cb113-4"><a href="#cb113-4" aria-hidden="true" tabindex="-1"></a><span class="co">#                            nodematch("Season", levels = "Dry", diff = TRUE) +</span></span>
+<span id="cb113-5"><a href="#cb113-5" aria-hidden="true" tabindex="-1"></a><span class="co">#                            nodematch("Village_loc", levels =  "Rural", diff = TRUE) +</span></span>
+<span id="cb113-6"><a href="#cb113-6" aria-hidden="true" tabindex="-1"></a><span class="co">#                            nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE) +</span></span>
+<span id="cb113-7"><a href="#cb113-7" aria-hidden="true" tabindex="-1"></a><span class="co">#                            gwdegree(cutoff = 5) +</span></span>
+<span id="cb113-8"><a href="#cb113-8" aria-hidden="true" tabindex="-1"></a><span class="co">#                            gwesp(cutoff = 5) +</span></span>
+<span id="cb113-9"><a href="#cb113-9" aria-hidden="true" tabindex="-1"></a><span class="co">#                            gwdsp(cutoff = 5),</span></span>
+<span id="cb113-10"><a href="#cb113-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                          eval.loglik = TRUE,</span></span>
+<span id="cb113-11"><a href="#cb113-11" aria-hidden="true" tabindex="-1"></a><span class="co">#                          verbose = TRUE)</span></span>
+<span id="cb113-12"><a href="#cb113-12" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(cefmodel_species, here("temp", "cef_species.rds"))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
