@@ -1,5 +1,5 @@
 ---
-title: "Serological investigation of Lassa mammarenavirus among rodent species in Eastern Sierra Leone."
+title: "Reconstructing rodent contact networks to understand potential routes of *Lassa mammarenavirus* transmission."
 author:
   - name: "David Simons"
     url: https://github.com/diddrog11/rodent_trapping
@@ -28,21 +28,52 @@ library(here)
 library(readr)
 ```
 
-# Abstract
+# Purpose of this chapter
+
+Using the locations of trapped rodents we can make assumptions about their habitable range and potential direct and indirect contacts with other individuals of the same or different species. These contact networks are important for the transmission and maintenance of *Lassa mammarenavirus* among the rodent communities. The contact networks are expected vary by landuse, season and within species. The antibody data can be overlaid to these contact networks to describe the expected scale of transmission with the network based on the observed data. 
+
+This chapter will attempt to address the following questions.
+
+  1. Do rodents have range overlap suggesting that they come into contact at greater or lesser rates?
+  2. Do these contact rates vary by landuse type and season?
+  3. Does the probability of a contact vary between and within species?
+  4. What are the implications for viral transmission through these recreated networks?
+
+## Limitations and assumptions
+
+  1. Rodent ranges and the concept of shared space use. Assuming that a rodent moves some distance X from its nest/home, it would spend a decreasing proportion of time in locations distal to this centre, with more time being sent in the central region. This is likely a simplification of their behaviour but will be used to illustrate the assumptions for contact. We trap this rodent at some point within this range. Whether it is trapped at the centre of its range or periphery is not known based on the observed data. We would need to have multiple captures and releases of a single individual in order to assess its true range. The subsequent buffering around this capture point and saying this is the rodents range is therefore a strong assumption. This is further complicated by including the same assumption for another rodent and saying that these rodents share a range and have a contact, rather than just some probability of a contact (which would be more truthful but difficult to estimate without intensive data on rodent movements). We will use a single assumption of range around a trapping point irrespective of species. This is unlikely to be true but there is no good data I have found on the range of the species we trap in the study sites.
+
+```{r, echo=FALSE, out.width="49%", out.height="49%", fig.show='hold', fig.cap="L) Probability distribution for a rodent range. It is highly unlikely that a rodent will partition its time in space like this. R) A two dimensional representation of probability of contact for two individual rodents"}
+knitr::include_graphics(c(here("report", "figures", "3D-gaussian.png"), here("report", "figures", "shared_space.png")))
+```
+
+  2. Missingness. We are not observing the entire rodent population that uses a trapping grid. The number of rodents that are trapped is likely a small subset of all those that are active in that space. This may also vary by species, time of the year and location. For example, *Mus musculus* may be more likely to enter a trap than  a *Praomys rostratus* so for the same trapping effort we would detect more *M. musculus*, leading to this species being over-represented in our sample and therefore contact network. Rodents may be more likely to enter a trap in periods of food scarcity, differential probability of detection by season could confound any inference on changing contact networks by season. Finally location is potentially important, a trap in the forest may be more or less likely to be entered than one in a home. Again, given a consistent trapping effort we may therefore observe an increased number of rodents in one of these locations that would result in our contact networks being denser or sparser than what they truly are. There may be a way we can understand these biases differently. First, we can assess the probability of detection using the methods in Chapter 3 across repeated trapping sessions. This could potentially help to understand whether we are more likely to detect a species during different conditions. Unfortunately this is at the species level rather than individual level. Second, we can estimate abundance of individuals in a trapping location. From this we can estimate the number of unobserved individuals and hence, the proportion of the population we are able to model. Any estimate of abundance will be poor and can only be treated as a very crude estimation.
+  
+  3. Contact. Beyond the probability and shared space approach we are introducing assumptions into contacts by the choice of definition. Lassa is transmitted through both direct and indirect means so contacts to not need to be both spatially and temporally overlapping. We are only observing rodents for 4 day periods so we do not have to worry too much about the temporal overlap. The spatial overlap issue is described above.
+  
+  4. Single observations. I have not found an article that uses single observations for this approach and the examples I have use Capture-Mark-Release (CMR) approaches. My interpretation of the limitation we have from single observations is that if there were other potential contacts for that individual we miss them if we are not trapping them over multiple observations. However, most studies trap for short periods of time and it is unclear how often they recapture the same individual, particularly for rodent studies. I am not really sure if this means that this approach is invalid.
+
+## Mitigations
+
+To mitigate the issues introduced in 1. and 3. I am intending on performing sensitivity analysis, changing the diameter around a trapped rodent at which we allow a contact to form. I would feel more confident in this approach if the probability of a contact between two individuals remains proportional based on the defined range. Any dramatic changes in the probability of a contact, in direction rather than magnitude, could be problematic. Missingness can be introduced into the modelling method if an estimate of abundance is possible. I am unsure how this will impact the probabilities of contacts but again I think sensitivity analysis would be useful to explore for this.
 
 Rodents move around, their expected range is Xm. We set traps covering Ym^2 in different landuse types across 4 villages in Sierra Leone over Z trapping sessions. If a rodent was trapped within 50m of another rodent during the same trapping session we define this as a potential contact, either direct or indirect. We explore these networks of contacts through an ERGM approach to explore the probability of a contact between different species under different land-use conditions. 
 
+----------------------------------------------------------------------
+
 # Introduction
 
-Lassa fever caused by *Lassa mammarenavirus* is an endemic zoonotic virus which causes an estimated 100,000-900,000 annual infections [@mccormick_prospective_1987; @basinski_bridging_2021]. Asymptomatic infection is common (up to 80%), although individuals who develop severe symptoms requiring hospitalisation have generally poor outcomes with mortality in this group reported as 15% [@simons_lassa_2022]. The majority of reported cases are diagnosed in Nigeria, where the Nigerian Centre for Disease Control have rapidly expanded access to testing and centralised reporting. Cases are also sporadically reported from the Mano River Valley countries of Guinea, Liberia and Sierra Leone, where testing is less available. Within countries reporting Lassa fever cases there is important spatial clustering, typically from rural areas with previously identified outbreaks [@agbonlahor_52_2021]. Additionally, there is potentially a seasonal component to Lassa fever outbreaks. In Nigeria reported cases peak in the first 3 months of the year, with low numbers of cases reported throughout the remainder of the year, these patterns are less pronounced in the Western endemic countries with no consistent seasonal association with peaks in reported cases [@gomerep_epidemiological_2022; @shaffer_space-time_2021; @jetoh_epidemiological_2022].
+Lassa fever caused by *Lassa mammarenavirus* is an endemic zoonotic virus which causes an estimated 100,000-900,000 annual infections [@mccormick_prospective_1987; @basinski_bridging_2021]. Asymptomatic infection is common (up to 80%), although individuals who develop severe symptoms requiring hospitalisation have generally poor outcomes with mortality in this group reported as 17% [@simons_lassa_2022]. The majority of reported cases are diagnosed in Nigeria, where the Nigerian Centre for Disease Control have rapidly expanded access to testing and centralised reporting. Cases are also sporadically reported from the Mano River Valley countries of Guinea, Liberia and Sierra Leone, where testing is less available. Within countries reporting Lassa fever cases there is important spatial clustering, typically from rural areas with previously identified outbreaks [@agbonlahor_52_2021]. Additionally, there is potentially a seasonal component to Lassa fever outbreaks. In Nigeria reported cases peak in the first 3 months of the year, with low numbers of cases reported throughout the remainder of the year, these patterns are less pronounced in the Western endemic countries with no consistent seasonal association with peaks in reported cases [@gomerep_epidemiological_2022; @shaffer_space-time_2021; @jetoh_epidemiological_2022].
 
 Human infections are associated with spillover from rodent hosts, with a limited role of human-to-human transmission [@lo_iacono_using_2015]. The primary host is *Mastomys natalensis* a commensal, native, rodent species present throughout sub-Saharan Africa. These rodents do not develop any clinical symptoms following infection with *Lassa mammarenavirus* and are susceptible to low infectious doses consistent with what might be obtained from a wound from an infected conspecific or environmental exposure [@safronetz_temporal_2022]. Viral RNA is detectable 3 days post infection, peaking within 1 to 2 weeks and resolving within approximately 40 days. RNA persistance was observed in testes beyond this 40 day interval suggesting that prolonged sexual transmission may exist. Based on a similar arenavirus (Morogoro virus), seroconversion is expected to occur 7 days post infection, with detectable antibodies remaining beyond the point in which circulating RNA has declined. Seroprevalence is therefore a useful measure of pathogen existence within a transmission system.
 
-Although *M. natalensis* is considered the primary reservoir, 13 other rodent species have been identified to be acutely or previously infected with *Lassa mammarenavirus* in endemic regions [@simons_rodent_2022]. The contribution of these species to pathogen spillover, viral transmission and maintenance is unknown. Direct and indirect contact between rodents in species rich environments may produce incidental infections of non-reservoir species which are subsequently detected through surveillance activities, while having little impact on viral transmission. Alternatively, these species may act to transfer this pathogen spatially, linking isolated *M. natalensis* populations and maintaining viral populations within the reservoir species. It is therefore important to characterise rodent networks within endemic settings, expanding investigations to the entire rodent assemblage rather than focussing on a single species' population.
+Although *M. natalensis* is considered the primary reservoir, 13 other rodent species have been identified to be acutely or previously infected with *Lassa mammarenavirus* in endemic regions [@simons_rodent_2022]. The contribution of these species to pathogen spillover, viral transmission and maintenance is unknown. Direct and indirect contact between rodents in species rich environments may produce incidental infections of non-reservoir species which are subsequently detected through surveillance activities, while having little impact on viral transmission. Alternatively, these species may act to transfer this pathogen spatially, linking geographically isolated *M. natalensis* populations and maintaining viral populations within the reservoir species. It is therefore important to characterise rodent networks within endemic settings, expanding investigations to the entire rodent assemblage rather than focussing on a single species' population.
 
 The composition of rodent networks and the potential interactions between distinct rodent species in Lassa fever endemic regions has not been systematically reported. Previous studies have limited description of wider rodent populations to measures of species richness and diversity which only provide evidence of contact at a habitat level [@fichetcalvet_diversity_2010; @happi_increased_2022]. Additional information on the temporal and spatial overlap of individuals to infer potential for contact between individuals and importantly the risk of transmission of zoonotic pathogens, including *Lassa mammarenavirus*, is important. Pathogens typically persist in dense, well-connected networks when frequency dependent transmission dominates [@begon_transmission_1999]. In discontinuous networks, pathogens with limited environmental transmission will die out as the number of susceptible individuals is rapidly depleted. We hypothesise that rodent contact rates, driven by greater abundance, would be greater in peri-urban settings where nutritional resources are more concentrated than in less anthropogenically modified landuse types. We further hypothesise that commensal rodent species, including *M. natalensis*, will have higher contact rates than non-commensal species such as *Praomys spp.*. It is expected that rodents with high connectivity to other individuals will be associated with antibody positivity for *Lassa mammarenavirus*.
 
-Here, we report potential contact networks of rodents in a Lassa fever endemic region, we analyse these networks to identify the rate of contact between rodents in different landuse settings. We report the prevalence of antibodies against *Lassa mammarenavirus* among rodents the region and explore the contact networks of positive rodents by land-use settings.
+Rodent contact networks can be reconstructed from rodent trapping data, typically capture-mark-recapture (CMR) methods are used to determine space-sharing by individuals [@carslake_spacetime_2005; @clay_contact_2009; @wanelik_new_2022]. Within the current system a CMR approach was appropriate due to the potential risk of releasing an infected rodent back into human communities. We adopt a similar approach to define contacts as Perkins *et al.* 2009, defining a direct or indirect contact as individuals trapped within a defined distance of each other, allowing that each individual can only be trapped once [@perkins_comparison_2009]. Contact networks have been used to model infectious disease transmission using Exponential-Family Random Graph Models (ERGMs) which assume dyadic independence - the probability of observing a particular edge $k$ is independent of other edges, after accounting for node- and edge-level covariates [@wilber_modelling_2019] 
+
+Here, we report potential contact networks of rodents in a Lassa fever endemic region, we analyse these networks to identify the rate of contact between rodents in different landuse settings. We report the prevalence of antibodies against *Lassa mammarenavirus* among rodents the region and explore the contact networks of positive rodents by land use settings.
 
 # Methods
 
@@ -50,7 +81,7 @@ Here, we report potential contact networks of rodents in a Lassa fever endemic r
 
 Rodent trapping was performed at 7 trapping sites within 4 villages in the Lassa fever endemic zone of the Eastern Province of Sierra Leone. Rodent populations were sampled from forested, agricultural and built (within and outside of homes) landscapes along an anthropogenic land use gradient. Village sites were enrolled based on accessibility to the sites during all seasons, discussions with the Lassa fever outreach team at Kenema Government Hospital and acceptability of the protocol to the village community. Villages and trapping sites were selected to be representative at the study level for land use in Eastern Sierra Leone.
 
-Trap sites were geo-located for repeated trapping activities, changes to land-use at the trapping site were recorded at each visit. Within each study site 49 individual Sherman traps (**size and reference**) were baited with a locally produced mixture of oats, palm oil and dried fish for 4 consecutive nights. Each morning the traps were checked and closed for the day prior to re-baiting during the evening.
+Trap sites were geo-located for repeated trapping activities, changes to land use at the trapping site were recorded at each visit. Within each study site 49 individual Sherman traps (**size and reference**) were baited with a locally produced mixture of oats, palm oil and dried fish for 4 consecutive nights. Each morning the traps were checked and closed for the day prior to re-baiting during the evening.
 
 ## Rodent samples
 
@@ -58,51 +89,37 @@ Trapped rodents were sedated with halothane and euthanised prior to obtaining mo
 
 Molecular identification to species was performed on dried blood spots that were stored at -20°C until processing. Genomic DNA was extracted using QIAGEN DNAeasy kits as per the manufacturers instructions [ref]. DNA extracts were amplified using platinum *Taq* polymerase (Invitrogen) and cytochrome B primers. DNA amplification was assessed through gel electrophoreisis with successful amplification products undergoing Sanger sequencing. Obtained sequences were compared using BLAST against NCBI records for rodent cytochrome B.
 
-## How does landuse-, species- and individual-level heterogeneity influence contact networks? (Need to change to my words)
-
-Over a fixed period of time (here 40 days), a particular species pair either will or will not experience a contact sufficient to transmit *Lassa mammarenavirus*. As we consider a binary network of contact or no-contact, we produce a contact vector for the presence of contact between two species of (1 0) and no-contact (0 1). Generally, the $k$th observation is defined by the zero/one vector $d_{k,i,j}$. This vector specifies the presence or absence of contact that a unique pair of individuals of species $i$ and $j$ experienced over the time interval. We use this model to ask how attributes of the species and individuals involved in the interaction and the time period in which it took place affect the probability of a contact. This is done using a Multinomial contact model (Equation 1.)
-
-\begin{align*}
-d_k &\sim {\sf Multinomial}(N_k, p_{contact}, p_{no-contact}) \\
-{\sf log}(\frac{p_{contact}}{p_{no-contact}}) & = X^{1} B^{1}
-\end{align*}
-
-Where $X$ is a matrix of landuse-, species-, individual-level and time-interval covariates. $B$ are vectors giving the effects of these covariates on the log probability of a contact, relative to no contact. $N_k$ is the number of contact modes, here 2 (contact and no-contact), experienced by the $k$th pair of individuals over the time interval. Equation 1. assumes dyadic independence - that the probability of observing a particular edge $k$ is independent of other edges, after accounting for node- and edge-level covariates. 
-
-We defined a contact as whether or not a unique animal pair had a recorded direct contact within a season. Seasons were defined as Dry () and Rainy (). As previous work has shown that rodent populations may migrate between landuse types during different periods of food availability. Contacts were defined as rodents trapped within 15 meters of another rodent, based on trap locations, within a period of 4 trap-nights ($t$). Finally, all individuals that never experienced contact with another rodent were removed as these may include individuals trapped on the extremes of their home range. Sensitivity analysis were performed with these individuals retained. 
-
-We considered a single-mode contact model, direct and indirect contacts were conflated given evidence that the pathogen of interest is transmitted by both means [@safronetz_temporal_2022]. We fit the following model to the data where all effects are relative to no contact (Equation 2).
-
-\begin{align*}
-d_k &\sim {\sf Multinomial}(N_k, p_{contact}, p_{no-contact}) \\
-{\sf log}(\frac{p_{contact}}{p_{no-contact}})k & = (1 \sf{sp-pair}_k \sf{landuse}_k \sf{sp-pair}_k * \sf{landuse}_k \sf{village}_k \sf{overlap-tn}_k \sf{season}_k)B^d + \alpha_{k,m,i}
-\end{elign*}
-
-The variable $\sf {sp-pair}_k$ is a vector of indicator variables where each element represents a unique pair of species $i$ and $j$. The variable $\sf {landuse}_k$ is a vector of indicator variables where each element represents the landuse category The variable $\sf{sp-pair}_k * \sf{landuse}_k$ allows the effect of sp-pair to vary by landuse. The variable $\sf {overlap-tn}_k$ gives the number of trap nights within a season that that contact between these species was recorded for. The variable $\sf{village}_k$ is a vector of elements where each item represents one of the four villages rodents were trapped in. The variable $\sf{season}_k$ is a vector of elements where each item represents the season. Finally, $\alpha$ are random effects that allow for individual-level differences in contact for individuals $m$ and $n$ respectively.
-
-To identify the role of individual- and species-level heterogeneity on contact networks, we fit the full model and then fit two reduced models in which either species-level heterogeneity (by the sp-pair factor) or individual-level heterogeneity (by the individual-level random effects) were removed. The first model excluded the effect of species-level heterogeneity on contact probability. The second model excluded the effect of individual-level heterogeneity on contact probability.
-
-## Do rodent contact rates differ by landuse type?
-
-To model contacts between individual small mammal species we produce a buffer zone, with a radius of 50m, around each trapped individual. Rodents detected within this area during the same trapping visit are considered as potential contacts. The `sf` package in the R statistical computing language was used for geospatial manipulation and analysis with the `igraph` package used to produce the rodent networks [@pebesma_simple_2018; @r_core_team_r_2021]. To test whether rodent contact rates vary by landuse type we analyse the composition of these networks comparing edge density, betweenness and .... Within these networks we further explore species level measures of degree, closeness and betweenness.
-
-## Do rodent contacts vary by species?
-
 ## *Lassa mammarenavirus* serology
 
-The ELISA was performed using the BLACKBOX® LASV IgG ELISA Kit developed by the Diagnostics Development Laboratory hosted at the Bernhard Nocht Institute for Tropical Medicine [ref]. The protocol is available as Supplementary Material 1. Briefly, 1 µL of whole blood was inactivated by mixing with the provided sample dilution buffer (1:50). Where whole blood was unavailable, blood was extracted from dried blood spots stored on filter paper by incubating with phosphate-buffered saline containing 0.08% Sodium Azide and 0.05% Tween 20. Samples and negative and positive controls were incubated on the provided ELISA plate for 24 hours at 4--8 °C in a wet chamber. Following incubation, the plates were washed with subsequent incubation for one hour with 1:10,000 diluted HRP-labelled streptavidin. A final wash was performed before the addition of 100 µL of 3,3',5,5'-Tetramethylbenzidine (TMB) substrate to all the wells, with incubation for 10 min. The colorimetric reaction was stopped by adding 100µL of a stop solution.
+The ELISA was performed using the BLACKBOX® LASV IgG ELISA Kit developed by the Diagnostics Development Laboratory hosted at the Bernhard Nocht Institute for Tropical Medicine [ref]. The protocol is available as Supplementary Material 1. Briefly, 1 µL of whole blood was inactivated by mixing with the provided sample dilution buffer (1:50). Where whole blood was unavailable, blood was extracted from dried blood spots stored on filter paper by incubating with phosphate-buffered saline containing 0.08% Sodium Azide and 0.05% Tween 20. Samples and negative and positive controls were incubated on the provided ELISA plate for 24 hours at 4-8 °C in a wet chamber. Following incubation, the plates were washed with subsequent incubation for one hour with 1:10,000 diluted HRP-labelled streptavidin. A final wash was performed before the addition of 100 µL of 3,3',5,5'-Tetramethylbenzidine (TMB) substrate to all the wells, with incubation for 10 min. The colorimetric reaction was stopped by adding 100µL of a stop solution.
 
-In a deviation from the kit description the optical density (OD) at 450nm and 630nm was measured (as opposed to 450nm and 620nm). The index value was produced from the OD difference (OD_450_ - OD_630_) divided by the cut-off values (the mean values of the negative controls + 0.150). Samples were considered positive with index values greater or equal to 1.1, negative results less than or equal to 0.9, and inconclusive results when the index value lay between 0.9 and 1.1. Inconclusive results were repeated as advised by the kit manufacturers.
+In a deviation from the kit description the optical density (OD) at 450nm and 630nm was measured (as opposed to 450nm and 620nm). The index value was produced from the OD difference (OD~450~-OD~630~) divided by the cut-off values (the mean values of the negative controls + 0.150). Samples were considered positive with index values greater or equal to 1.1, negative results less than or equal to 0.9, and inconclusive results when the index value lay between 0.9 and 1.1. Inconclusive results were repeated as advised by the kit manufacturers.
 
-## What is the prevalence of antibodies to *Lassa mammarenavirus* in an endemic setting in Sierra Leone?
+## Statistical analysis
 
-We report the prevalence of antibodies to *Lassa mammarenavirus* in our trapped population. We explore how this varies between village study site, land-use type and species of rodent. To understand any fluctuation in prevalence we report on the temporal variation of seroprevalence in trapped rodents.
+### How does landuse-, species- and individual-level heterogeneity influence contact networks?
 
-## Are *Lassa mammarenavirus* exposed rodents members of highly connected networks?
+Over a fixed period of time, a pair of individuals either will or will not experience a contact sufficient to transmit *Lassa mammarenavirus*. We consider a binary network of contact or no-contact between trapped individuals based on a radius of 50m around the location they were trapped, during the same trapping period (4 days). We produce contact matrices for each study site, during each trapping session, within each study village. The location of each trapped individual is associated with a buffer zone with a radius of 50m (0.0079 km^2^), using the `sf` package in the R statistical computing language [@pebesma_simple_2018; @r_core_team_r_2021]. Within a trapping session a contact is defined if a different individual is trapped within this area. We do not use overlapping ranges for both rodents, as it is not possible to ascertain where in an individual rodents range it was detected, as a simplifying assumption we therefore limit the production of a spatial range to the index individual. 
 
-The networks produced for each land-use category were further subset to only include contacts between antibody positive individuals other co-located individuals. These sub-graphs were analysed using the same metrics as for the land-use graphs.
+Attributes of an individual rodent are included as nodal attributes and include the species of the individual, the setting of the village study site (rural or urban), the land use of the trapping site, the season in which it was trapped (dry or rainy), the age classification of the rodent and its serostatus. Networks are produced with nodes representing individual rodents and undirected edges representing contacts between individuals using the `igraph` and `network` packages in R [@csardi_igraph_2006; @butts_network_2008].
 
-# Results
+To investigate whether land use type, season and species type impact the properties of these networks we model these contacts as Exponential-Family Random Graphs (ERGM) [@hunter_ergm_2008]. ERGMs implement maximum likelihood estimates to produce an Odds Ratio for the probability of an edge forming following the addition of a new single node into a network based on network properties and nodal attributes. We use these produced models to compare the probabilities of edges forming based on rodent characteristics and environmental characteristics (i.e. land use type and season). Models are constructed step-wise with terms for node homophily and network characteristics included as supported by reduction in penalised metrics including AIC and BIC. The general model term for the entire network follows Equation 1.
+
+$$
+\log({\exp(\theta'g(y))}) = \theta_1g_1(y) + \theta_2g_2(y)+ ... + \theta_pg_p(y)
+$$
+
+Here $p$ is the number of terms in the model, the coefficients $\theta$ represent the size and direction of the effects of the covariates $g(y)$ on the overall probability of the network. At the edge level the expression for the probability of the entire graph can be re-expressed as the conditional log-odds of a single edge between two nodes (a contact between two rodents) as in Equation 2. \ref{eq:2}:
+
+$$
+\operatorname{logit}{(Y_{ij}=1|y^{c}_{ij})=\theta'\delta(y_{ij})}
+$$
+
+Here $Y_{ih}$ is the random variable for the state of the node pair $ij$  and $y^{c}_{i,j}$ signifies all dyads in the network other than $y_{i,j}$. $\theta'$ is the coefficient for the change production of an edge between the two nodes conditional on all other dyads remaining the same ($\delta(y_{ij}$).
+
+Using this approach we can investigate the conditional probability of the selected coefficients of land use, seasonality, rodent species and serostatus on an edge forming between two individuals. We report the probability of edges forming in urban compared to rural settings, in agricultural compared to built-up areas and between members of the same or different species and finally serostatus for *Lassa mammarenavirus*.
+
+# Results 
 
 420 individual rodents were trapped from 26,524 trap-nights (TN). 12 species were identified from molecular classification, the majority of which were identified as *M. natalensis* (N = 75, 17.9%), *Lophuromys sikapusi* (N = 44, 10.5%) and *Mus musculus* (N = 41, 9.8%) (Table 1.).
 
@@ -110,20 +127,29 @@ Antibodies to *Lassa mammarenavirus* were identified in 20 (4.4%) rodents, inclu
 
 Rodents with antibodies to *Lassa mammarenavirus* were detected in three of the villages, Lalehun (N = 11, 55%), Seilama (N = 8, 40%) and Baiama (N = 1, 5%) (Supplementary Table 1.). No positive rodents were detected in Lambayama or Bambawo. Among the villages with positive rodents the highest rates of positivity among trapped rodents was from Lalehun (10.1%), followed by Seilama (4.2%) and Baiama (2.2%). Positive rodents were detected during all study visits, the highest rate of positivity was observed during trapping conducted in June (N = 5, 8.6%), the lowest positivity rate was observed in November (N = 1, 2.2%) (Supplementary Table 2.). Most antibody positive rodents were trapped in agricultural settings (N = 13, 65%), followed by peri-urban (N = 6, 30%) and forest settings (N = 1, 5%). The rate of positivity was similar in both village and agricultural settings (4.9%) and lower in forest habitats (3.2%).
 
-# Discussion
+## Rodent contact networks
 
-Future work should include testing these samples for acute viral infection using RT-PCR to understand the risk of viral transmission to humans.
+**I am currently working on this with a colleague, I can share some preliminary results for context. The current approach is treating the data as a single network and is not incorporating any measure of the total population size of which this is a sample. This is not the most appropriate approach and so I am currently working on producing a network for each site trapping instance and there will be an estimate of rodent abundance incorporated into the modelled networks. The figures I present here include the sensitivity analysis of the effect of changing the rodent buffer range. When I change to the multi-network method the Odds Ratio that will be produced for each network will be used to produce a weighted mean probability of a contact forming rather than the current output which is the probability of a contact forming using the whole network.**
 
-# Limitations
+These images show the networks produced by land use type and repeated for each of the proposed rodent range radii, 15m, 30m and 50m.
 
-Each rodent has only a single observation, the probability of an inferred contact being a true contact is therefore impossible to estimate. For example, if both rodents were trapped at the periphery of their individual-level space use the probability of a direct or indirect encounter would be low, compared to if both were trapped at the core of their space use.
+![Village rodent contact network. Colour refers to species of rodent. As the radius of rodent range increases more contacts are produced.](figures/village_graph.svg)
 
-# Conclusion
+![Agricultural rodent contact network. Colour refers to species of rodent. As the radius of rodent range increases more contacts are produced. Compared to the village network these are more species rich with an increased proportion of contacts between species compared to within species.](figures/agriculture_graph.svg)
 
-# References
+![Forest rodent contact network. Colour refers to species of rodent. As the radius of rodent range increases more contacts are produced. Compared to the other land use networks these are more sparse as fewer individuals were trapped in these locations.](figures/forest_graph.svg)
 
-# Supplementary
+The mean degree (number of contacts) we observed for individual rodents was 1.7 (s.d. 2.2) using the 15m dataset, 3.6 (s.d. 4.4) using the 30m, and 5.4 (s.d. 5.4) using the 50m data. The density of the networks (the proportion of all possible edges that are observed) follows a similar pattern of .004, .008 and 0.013 respectively.
 
-```{r}
-read_rds(here("report", "plots", "baiama_agriculture.rds"))
-```
+Using these network properties we can produce random graphs. These can then be compared to the observed graphs to see if what we observe is different from a randomly assorted network. For each of the three datasets we see more isolated individuals and more highly connected individuals than would be expected by chance alone. 
+
+![The distribution of contacts for individual rodents compared to a random graph using the same network properties](figures/degree_plot.png)
+
+The potential drivers of these patterns is assortative mixing, I will focus on species, land use and village setting as they are questions I am interested in although additional coefficients may be added to the models. An example of this can be shown by looking at the number of contacts we observe by species.
+
+![Mean degree by species for each of the three datasets. The trend does not change based on the radius of the range which I believe is reassuring](figures/species_degree.svg)
+
+The current model includes terms for the species type, a homophily term for species (are species more likely to have contacts with members of their own species), and homophily terms for season, village location and landuse type. There is an additional term which includes a random effect to account for individuals that do not have a contact with other individuals which provides a slightly better fitting model. Using this model we can predict the probability of a contact for a new rodent of different species in different landuse types. The model produces networks that are more connected than what we observe which is why I am trying the alternate approach described above. Despite this I think the general findings will not change dramatically.
+
+Rodents are around 3 times more likely to have a contact if they are in the village compared to agricultural land use. Rodents in rural compared to urban settings are more likely to have contacts. *Mus musculus* are more likely to have contacts with others of the same species but less likely to have contact with non-*Mus musculus* individuals. *Mastomys natalensis* show a similar pattern. *Praomys* in contrast are more likely to have contacts with other rodents but are relatively equally likely to have contact with other species as with members of their own species. 
+

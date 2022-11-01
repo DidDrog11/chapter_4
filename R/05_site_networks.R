@@ -1,13 +1,25 @@
 # Load in the rodent data and split by site
-site_rodents <- read_rds(here("data", "unique_rodents.rds")) %>%
+rodents <- read_rds(here("data", "unique_rodents.rds")) %>%
   drop_na(initial_species_id) %>%
   drop_na(grid_number) %>%
+  mutate(grid_number = case_when(grid_number %in% c("6", "7") ~ "6",
+                          TRUE ~ as.character(grid_number))) 
+
+site_rodents <- rodents %>%
   st_as_sf(crs = default_CRS) %>%
   st_transform(crs = SL_UTM) %>%
-  mutate(grid_number = case_when(grid_number %in% c("6", "7") ~ "6",
-                          TRUE ~ as.character(grid_number))) %>%
   group_by(village, visit, grid_number) %>%
   group_split()
+
+sites <- tibble(village = c(rep("baiama", 19), rep("lalehun", 36), rep("lambayama", 19), rep("seilama", 36), rep("bambawo", 4)),
+                visit = c(rep(3, each = 4), rep(4:6, each = 5), rep(1:6, each = 6), rep(3, each = 4), rep(4:6, each = 5), rep(1:6, each = 6), rep(3, times = 4)),
+                grid_number = as.character(c(rep(1:4, each = 1), rep(rep(c(1:4, 6)), times = 3), rep(1:6, times = 6), rep(1:4, each = 1), rep(rep(c(1:4, 6)), times = 3), rep(1:6, times = 6), rep(1:4, each = 1)))) %>%
+  left_join(rodents %>%
+              mutate(visit = as.numeric(as.character(visit))) %>%
+              select(village, visit, grid_number, rodent = rodent_uid)) %>%
+  mutate(rodent = case_when(is.na(rodent) ~ FALSE,
+                            TRUE ~ TRUE)) %>%
+  distinct()
 
 produce_assemblages_site <- function(rodent_data = site_rodents, distance = 15) {
   
@@ -244,62 +256,313 @@ write_rds(rodent_network, here("data", "rodent_network_site.rds"))
 rodent_networks <- lapply(rodent_network, function(x) lapply(x, function(y) {asNetwork(y)}))
 
 rodent_net_descriptives <- lapply(rodent_networks, function(x) {
-  list("mean_degree" = mean(degree(x, gmode = "graph")),
-       "sd_degree" = sd(degree(x, gmode = "graph")),
-       "degree_table" = table(degree(x, gmode = "graph")),
-       "triad_table" = triad.census(x, mode = "graph"),
-       "density" = graph.density(asIgraph(x)))
-})
+  
+  net_descriptives <- tibble()
+  
+  for(i in 1:length(x)) {
+    
+    descriptives <- tibble(network_number = i,
+                           nodes = length(x[[i]] %v% "vertex.names"),
+                           edges = length(valid.eids(x[[i]])),
+                           mean_degree = mean(degree(x[[i]], gmode = "graph")),
+                           sd_degree = sd(degree(x[[i]], gmode = "graph")),
+                           density = if(is.nan(graph.density(asIgraph(x[[i]])))) NA else graph.density(asIgraph(x[[i]])))
+                           
+    
+    net_descriptives <- net_descriptives %>%
+      bind_rows(descriptives)
+    
+  }
+  
+  return(net_descriptives)
+  })
+
+network_metric_df <- bind_rows(rodent_net_descriptives, .id = "Distance") %>%
+  arrange(nodes) %>%
+  mutate(network_number = fct_inorder(as.character(network_number)))
+
+node_plot <- network_metric_df %>%
+  ggplot() +
+  geom_point(aes(x = nodes, y = network_number)) +
+  facet_wrap(~ Distance) +
+  labs(x = "Nodes") +
+  theme_bw()
+
+edge_plot <- network_metric_df %>%
+  ggplot() +
+  geom_point(aes(x = edges, y = network_number)) +
+  facet_wrap(~ Distance, scales = "free") +
+  labs(x = "Edges") +
+  theme_bw()
+
+mean_d_plot <- network_metric_df %>%
+  ggplot() +
+  geom_point(aes(x = mean_degree, y = network_number)) +
+  facet_wrap(~ Distance, scales = "free") +
+  labs(x = "Mean Degree") +
+  theme_bw()
+
+density_plot <- network_metric_df %>%
+  ggplot() +
+  geom_point(aes(x = density, y = network_number)) +
+  facet_wrap(~ Distance, scales = "free") +
+  labs(x = "Density") +
+  theme_bw()
 
 # Produce a random graph of similar properties for comparison
 # Random graph of similar size and density
-random_rodent_networks <- lapply(rodent_networks, function(x) {
-  as.network(rgraph(412, m = 1, tprob = graph.density(asIgraph(x)), mode = "graph"), directed = FALSE)
-})
+random_rodent_networks <- vector("list", 3)
 names(random_rodent_networks) <- c("random_15", "random_30", "random_50")
-random_rodent_networks$random_15 %v% "Contact.radius" <- "15m"
-random_rodent_networks$random_30 %v% "Contact.radius" <- "30m"
-random_rodent_networks$random_50 %v% "Contact.radius" <- "50m"
 
-# Assess the degree distribution of these random networks to the observed
-degree_plots <- list()
-
-for(i in 1:length(rodent_networks)) {
-  degree_plots[[i]] <- plot_grid(plotlist = list(tibble("degree" = degree(random_rodent_networks[[i]], gmode = "graph")) %>%
-                                                   ggplot() + 
-                                                   geom_bar(aes(x = degree)) +
-                                                   labs(title = paste0("Degree: ",  unique(random_rodent_networks[[i]] %v% "Contact.radius")," (Random)")) +
-                                                   theme_bw(),
-                                                 tibble("degree" = degree(rodent_networks[[i]], gmode = "graph")) %>%
-                                                   ggplot() +
-                                                   geom_bar(aes(x = degree)) +
-                                                   labs(title = paste0("Degree: ", unique(rodent_networks[[i]] %v% "Contact.radius"), " (Rodent)")) +
-                                                   theme_bw()))
-}
-
-# The clustering of these networks can be seen using mixing matrices
-options(max.print = 200)
-
-mixing_matrices <- lapply(rodent_networks, function(x) {
-  list("Species matrix" = mixingmatrix(x, "Species"),
-       "Village location matrix" = mixingmatrix(x, "Village.locations"),
-       "Landuse matrix" = mixingmatrix(x, "Landuse"),
-       "Serostatus matrix" = mixingmatrix(x, "ELISA"))
+random_rodent_networks <- lapply(rodent_networks, function(x) {
+  lapply(x, function(y) {
+    
+    as.network(rgraph(length(y %v% "vertex.names"), m = 1, tprob = graph.density(asIgraph(y)), mode = "graph"), directed = FALSE)
+    
+  })
 })
 
-species_degree <- lapply(rodent_networks, function(x) tibble("Species" = x %v% "Species",
-                                                             "Degree" = degree(x),
-                                                             "Distance" = x %v% "Contact.radius")) %>%
-  bind_rows() %>%
-  group_by(Species, Distance) %>%
-  summarise(Degree = mean(Degree)) %>%
-  ungroup() %>%
-  arrange(-Degree) %>%
-  mutate(Species = fct_inorder(Species)) %>%
+random_net_descriptives <- lapply(random_rodent_networks, function(x) {
+  
+  net_descriptives <- tibble()
+  
+  for(i in 1:length(x)) {
+    
+    descriptives <- tibble(network_number = i,
+                           nodes = length(x[[i]] %v% "vertex.names"),
+                           edges = length(valid.eids(x[[i]])),
+                           mean_degree = mean(degree(x[[i]], gmode = "graph")),
+                           sd_degree = sd(degree(x[[i]], gmode = "graph")),
+                           density = if(is.nan(graph.density(asIgraph(x[[i]])))) NA else graph.density(asIgraph(x[[i]])))
+    
+    
+    net_descriptives <- net_descriptives %>%
+      bind_rows(descriptives)
+    
+  }
+  
+  return(net_descriptives)
+})
+
+random_metric_df <- bind_rows(random_net_descriptives, .id = "Distance") %>%
+  arrange(nodes) %>%
+  mutate(network_number = fct_inorder(as.character(network_number)))
+
+random_node_plot <- random_metric_df %>%
   ggplot() +
-  geom_point(aes(x = Species, y = Degree, colour = Species)) +
-  labs(title = "Mean degree by species") +
-  scale_colour_manual(values = species_palette) +
-  coord_flip() +
+  geom_point(aes(x = nodes, y = network_number)) +
   facet_wrap(~ Distance) +
+  labs(x = "Nodes") +
   theme_bw()
+
+random_edge_plot <- random_metric_df %>%
+  ggplot() +
+  geom_point(aes(x = edges, y = network_number)) +
+  facet_wrap(~ Distance, scales = "free") +
+  labs(x = "Edges") +
+  theme_bw()
+
+random_mean_d_plot <- random_metric_df %>%
+  ggplot() +
+  geom_point(aes(x = mean_degree, y = network_number)) +
+  facet_wrap(~ Distance, scales = "free") +
+  labs(x = "Mean Degree") +
+  theme_bw()
+
+random_density_plot <- random_metric_df %>%
+  ggplot() +
+  geom_point(aes(x = density, y = network_number)) +
+  facet_wrap(~ Distance, scales = "free") +
+  labs(x = "Density") +
+  theme_bw()
+
+comparison_plot_n <- plot_grid(plotlist = list(node_plot, random_node_plot), nrow = 2)
+comparison_plot_e <- plot_grid(plotlist = list(edge_plot, random_edge_plot), nrow = 2)
+comparison_plot_mean_d <- plot_grid(plotlist = list(mean_d_plot, random_mean_d_plot), nrow = 2)
+comparison_plot_density <- plot_grid(plotlist = list(density_plot, random_density_plot), nrow = 2)
+
+species_degree <- lapply(rodent_networks, function(x) {
+  degrees <- tibble()
+  
+  lapply(x, function(y) {
+    degrees <- tibble("Species" = y %v% "Species",
+                      "Degree" = degree(y),
+                      "Distance" = y %v% "Contact.radius")
+  }) %>%
+    bind_rows() %>%
+    arrange(-Degree) %>%
+    mutate(Species = factor(Species, levels = names(species_palette))) %>%
+    ggplot() +
+    geom_boxplot(aes(x = fct_rev(Species), y = Degree, fill = Species)) +
+    labs(title = "Mean degree by species",
+         x = "Species") +
+    scale_fill_manual(values = species_palette) +
+    coord_flip() +
+    facet_wrap(~ Distance) +
+    theme_bw()
+  })
+
+# Build models ------------------------------------------------------------
+source(here("R", "modified_functions.R"))
+
+# Random graph models
+null_models <- lapply(random_rodent_networks, function(x) {
+  lapply(x, function(y) {
+    if(length(valid.eids(y)) >= 1) ergm(y ~ edges) else NA
+  })
+})
+
+summary_null_models <- lapply(null_models, function(x) {
+  lapply(x, function(y) {
+    if(is.list(y)) try(summary.ergm.david(y)) else NA
+  })
+})
+
+completed_null_models <- lapply(summary_null_models, function(x)
+  {
+  model_ran <- lapply(x, function(y) is.list(y)) %>%
+    unlist()
+  completed_models <- x[model_ran]
+  
+  return(completed_models)
+  })
+
+# Main effects only models
+rodent_models <- list()
+rodent_models$main_effects <- lapply(rodent_networks, function(x) {
+  ergm(x ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")))
+})
+rodent_models_summary <- list()
+rodent_models_summary$main_effects <- lapply(rodent_models$main_effects, function(x) {summary.ergm.david(x)})
+
+# Homophily model for main effects term
+rodent_models$homophily <- lapply(rodent_networks, function(x) {
+  ergm(x ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+         + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE))
+})
+rodent_models_summary$homophily <- lapply(rodent_models$homophily, function(x) {summary.ergm.david(x)})
+
+# Adding terms, factor for season, match for village location and landuse
+rodent_models$additional_terms_1 <- lapply(rodent_networks, function(x) {
+  ergm(x ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+         + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
+         nodefactor("Season", levels = "Dry") +
+         nodematch("Village.locations", levels =  "Rural", diff = TRUE) +
+         nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE))
+})
+rodent_models_summary$additional_terms_1 <- lapply(rodent_models$additional_terms_1, function(x) {summary.ergm.david(x)})
+
+# Adding terms, match for season, village location and landuse
+rodent_models$additional_terms_2 <- lapply(rodent_networks, function(x) {
+  ergm(x ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+         + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
+         nodematch("Season", levels = "Dry") +
+         nodematch("Village.locations", levels =  "Rural", diff = TRUE) +
+         nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE))
+})
+rodent_models_summary$additional_terms_2 <- lapply(rodent_models$additional_terms_2, function(x) {summary.ergm.david(x)})
+
+# Adding an additional term for isolates
+rodent_models$additional_terms_3 <- lapply(rodent_networks, function(x) {
+  ergm(x ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+         + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
+         nodematch("Season", levels = "Dry") +
+         nodematch("Village.locations", levels =  "Rural", diff = TRUE) +
+         nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE) +
+         isolates())
+})
+rodent_models_summary$additional_terms_3 <- lapply(rodent_models$additional_terms_3, function(x) {summary.ergm.david(x)})
+
+# Adding an additional term for triangles
+rodent_models$additional_terms_4 <- lapply(rodent_networks, function(x) {
+  ergm(x ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+         + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
+         nodematch("Season", levels = "Dry") +
+         nodematch("Village.locations", levels =  "Rural", diff = TRUE) +
+         nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE) +
+         triangles())
+})
+rodent_models_summary$additional_terms_4 <- lapply(rodent_models$additional_terms_4, function(x) {summary.ergm.david(x)})
+
+# Assessing Goodness-of-Fit -----------------------------------------------
+# For the 15 meter contact
+models_15m <- list(observed = rodent_networks$observed_15,
+                   null = null_models$random_15,
+                   main_effects = rodent_models$main_effects$observed_15,
+                   homophily = rodent_models$homophily$observed_15,
+                   additional_terms_1 = rodent_models$additional_terms_1$observed_15,
+                   additional_terms_2 = rodent_models$additional_terms_2$observed_15,
+                   additional_terms_3 = rodent_models$additional_terms_3$observed_15)
+
+simulated_15m <- list(null_sim = simulate(models_15m$null, seed = 123),
+                      main_sim = simulate(models_15m$main_effects, seed = 123),
+                      homophily = simulate(models_15m$homophily, seed = 123),
+                      additional_terms_1 = simulate(models_15m$additional_terms_1, seed = 123),
+                      additional_terms_2 = simulate(models_15m$additional_terms_2, seed = 123),
+                      additional_terms_3 = simulate(models_15m$additional_terms_3, seed = 123))
+
+gof_15m <- bind_cols(model = names(models_15m),
+                     rbind(summary(models_15m$observed ~ edges + degree(0:5) + triangle),
+                           summary(simulated_15m$null_sim ~ edges + degree(0:5) + triangle),
+                           summary(simulated_15m$main_sim ~ edges + degree(0:5) + triangle),
+                           summary(simulated_15m$homophily ~ edges + degree(0:5) + triangle),
+                           summary(simulated_15m$additional_terms_1 ~ edges + degree(0:5) + triangle),
+                           summary(simulated_15m$additional_terms_2 ~ edges + degree(0:5) + triangle),
+                           summary(simulated_15m$additional_terms_3 ~ edges + degree(0:5) + triangle)),
+                     AIC = c(NA, unlist(lapply(models_15m[-1], function(x) AIC(x)[1]))),
+                     BIC = c(NA, unlist(lapply(models_15m[-1], function(x) BIC(x)[1]))))
+
+# For the 30 meter contact
+models_30m <- list(observed = rodent_networks$observed_30,
+                   null = null_models$random_30,
+                   main_effects = rodent_models$main_effects$observed_30,
+                   homophily = rodent_models$homophily$observed_30,
+                   additional_terms_1 = rodent_models$additional_terms_1$observed_30,
+                   additional_terms_2 = rodent_models$additional_terms_2$observed_30,
+                   additional_terms_3 = rodent_models$additional_terms_3$observed_30)
+
+simulated_30m <- list(null_sim = simulate(models_30m$null, seed = 123),
+                      main_sim = simulate(models_30m$main_effects, seed = 123),
+                      homophily = simulate(models_30m$homophily, seed = 123),
+                      additional_terms_1 = simulate(models_30m$additional_terms_1, seed = 123),
+                      additional_terms_2 = simulate(models_30m$additional_terms_2, seed = 123),
+                      additional_terms_3 = simulate(models_30m$additional_terms_3, seed = 123))
+
+gof_30m <- bind_cols(model = names(models_30m),
+                     rbind(summary(models_30m$observed ~ edges + degree(0:5) + triangle),
+                           summary(simulated_30m$null_sim ~ edges + degree(0:5) + triangle),
+                           summary(simulated_30m$main_sim ~ edges + degree(0:5) + triangle),
+                           summary(simulated_30m$homophily ~ edges + degree(0:5) + triangle),
+                           summary(simulated_30m$additional_terms_1 ~ edges + degree(0:5) + triangle),
+                           summary(simulated_30m$additional_terms_2 ~ edges + degree(0:5) + triangle),
+                           summary(simulated_30m$additional_terms_3 ~ edges + degree(0:5) + triangle)),
+                     AIC = c(NA, unlist(lapply(models_30m[-1], function(x) AIC(x)[1]))),
+                     BIC = c(NA, unlist(lapply(models_30m[-1], function(x) BIC(x)[1]))))
+
+# For the 50 meter contact
+models_50m <- list(observed = rodent_networks$observed_50,
+                   null = null_models$random_50,
+                   main_effects = rodent_models$main_effects$observed_50,
+                   homophily = rodent_models$homophily$observed_50,
+                   additional_terms_1 = rodent_models$additional_terms_1$observed_50,
+                   additional_terms_2 = rodent_models$additional_terms_2$observed_50,
+                   additional_terms_3 = rodent_models$additional_terms_3$observed_50)
+
+simulated_50m <- list(null_sim = simulate(models_50m$null, seed = 123),
+                      main_sim = simulate(models_50m$main_effects, seed = 123),
+                      homophily = simulate(models_50m$homophily, seed = 123),
+                      additional_terms_1 = simulate(models_50m$additional_terms_1, seed = 123),
+                      additional_terms_2 = simulate(models_50m$additional_terms_2, seed = 123),
+                      additional_terms_3 = simulate(models_50m$additional_terms_3, seed = 123))
+
+gof_50m <- bind_cols(model = names(models_50m),
+                     rbind(summary(models_50m$observed ~ edges + degree(0:5) + triangle),
+                           summary(simulated_50m$null_sim ~ edges + degree(0:5) + triangle),
+                           summary(simulated_50m$main_sim ~ edges + degree(0:5) + triangle),
+                           summary(simulated_50m$homophily ~ edges + degree(0:5) + triangle),
+                           summary(simulated_50m$additional_terms_1 ~ edges + degree(0:5) + triangle),
+                           summary(simulated_50m$additional_terms_2 ~ edges + degree(0:5) + triangle),
+                           summary(simulated_50m$additional_terms_3 ~ edges + degree(0:5) + triangle)),
+                     AIC = c(NA, unlist(lapply(models_50m[-1], function(x) AIC(x)[1]))),
+                     BIC = c(NA, unlist(lapply(models_30m[-1], function(x) BIC(x)[1]))))
+gof(models_50m$additional_terms_3)

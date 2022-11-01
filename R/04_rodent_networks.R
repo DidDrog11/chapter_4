@@ -267,7 +267,9 @@ plot_forest_graphs <- plot_grid(plotlist = list(forest_graphs[[1]] +
 save_plot(plot = plot_village_graphs, filename = here("output", "village_graph.pdf"), base_height = 14, base_width = 16)
 save_plot(plot = plot_agriculture_graphs, filename = here("output", "agriculture_graph.pdf"), base_height = 14, base_width = 16)
 save_plot(plot = plot_forest_graphs, filename = here("output", "forest_graph.pdf"), base_height = 14, base_width = 16)
-
+save_plot(plot = plot_village_graphs, filename = here("output", "village_graph.svg"), base_height = 14, base_width = 16)
+save_plot(plot = plot_agriculture_graphs, filename = here("output", "agriculture_graph.svg"), base_height = 14, base_width = 16)
+save_plot(plot = plot_forest_graphs, filename = here("output", "forest_graph.svg"), base_height = 14, base_width = 16)
 # Describing contact networks --------------------------------------------------------
 
 rodent_network <- graphs
@@ -317,6 +319,8 @@ for(i in 1:length(rodent_networks)) {
                                               theme_bw()))
                                             }
 
+save_plot(plot_grid(plotlist = degree_plots, ncol = 1), filename = here("report", "figures", "degree_plot.png"), base_height = 8)
+
 # The clustering of these networks can be seen using mixing matrices
 options(max.print = 200)
 
@@ -344,6 +348,7 @@ species_degree <- lapply(rodent_networks, function(x) tibble("Species" = x %v% "
   facet_wrap(~ Distance) +
   theme_bw()
 
+save_plot(species_degree, filename = here("report", "figures", "species_degree.svg"), base_height = 8)
 
 # Build models ------------------------------------------------------------
 source(here("R", "modified_functions.R"))
