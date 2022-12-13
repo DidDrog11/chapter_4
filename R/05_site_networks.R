@@ -1,25 +1,20 @@
-# Load in the rodent data and split by site
-rodents <- read_rds(here("data", "unique_rodents.rds")) %>%
-  drop_na(initial_species_id) %>%
+# Load in the rodent data and split by landuse and visit
+rodents <- unique_rodents %>%
+  drop_na(species) %>%
   drop_na(grid_number) %>%
-  mutate(grid_number = case_when(grid_number %in% c("6", "7") ~ "6",
-                          TRUE ~ as.character(grid_number))) 
-
-site_rodents <- rodents %>%
-  st_as_sf(crs = default_CRS) %>%
-  st_transform(crs = SL_UTM) %>%
-  group_by(village, visit, grid_number) %>%
+  left_join(trap_data, by = c("trap_id", "village", "grid_number", "visit")) %>%
+  group_by(rodent_id) %>%
+  arrange(site_id) %>%
+  slice(1) %>%
+  select(rodent_id, species, village, visit, grid_number, site_id, landuse, trap_northing, trap_easting)
+  
+landuse_rodents <- rodents %>%
+  st_as_sf(coords = c("trap_northing", "trap_easting"), crs = SL_UTM) %>%
+  group_by(landuse, visit) %>%
   group_split()
 
-sites <- tibble(village = c(rep("baiama", 19), rep("lalehun", 36), rep("lambayama", 19), rep("seilama", 36), rep("bambawo", 4)),
-                visit = c(rep(3, each = 4), rep(4:6, each = 5), rep(1:6, each = 6), rep(3, each = 4), rep(4:6, each = 5), rep(1:6, each = 6), rep(3, times = 4)),
-                grid_number = as.character(c(rep(1:4, each = 1), rep(rep(c(1:4, 6)), times = 3), rep(1:6, times = 6), rep(1:4, each = 1), rep(rep(c(1:4, 6)), times = 3), rep(1:6, times = 6), rep(1:4, each = 1)))) %>%
-  left_join(rodents %>%
-              mutate(visit = as.numeric(as.character(visit))) %>%
-              select(village, visit, grid_number, rodent = rodent_uid)) %>%
-  mutate(rodent = case_when(is.na(rodent) ~ FALSE,
-                            TRUE ~ TRUE)) %>%
-  distinct()
+trap_locations <- trap_locations %>%
+  left_join(season, by = "visit")
 
 produce_assemblages_site <- function(rodent_data = site_rodents, distance = 15) {
   
@@ -28,9 +23,9 @@ produce_assemblages_site <- function(rodent_data = site_rodents, distance = 15) 
   
   # Produce a buffer around each individual to create their range
   individual_buffers <- lapply(rodent_data, function(x) { x %>%
-      select(rodent_uid, initial_species_id, village, visit, grid_number) %>%
+      select(rodent_id, species, village, visit, grid_number) %>%
       st_buffer(dist = distance) %>%
-      group_by(rodent_uid) %>%
+      group_by(rodent_id) %>%
       group_split() })
   
   assemblages <- lapply(individual_buffers, function(y) {
@@ -47,31 +42,31 @@ produce_assemblages_site <- function(rodent_data = site_rodents, distance = 15) 
       reference_grid_number <- unique(x$grid_number)
       
       # Allocate a species to an individual
-      reference_species <- unique(x$initial_species_id)
+      reference_species <- unique(x$species)
       
       # Allocate an ID to use for reference
-      reference_id <- unique(x$rodent_uid)
+      reference_id <- unique(x$rodent_id)
       
       # Join the reference rodent to others that were detected in their range
       contact <- st_filter(bind_rows(rodent_data) %>%
-                             filter(!rodent_uid %in% reference_id &
+                             filter(!rodent_id %in% reference_id &
                                       village %in% reference_village &
                                       visit %in% reference_visit &
                                       grid_number %in% reference_grid_number) %>%
-                             rename(to_uid = rodent_uid,
-                                    to_species = initial_species_id), 
+                             rename(to_id = rodent_id,
+                                    to_species = species), 
                            x %>%
-                             select(rodent_uid, geometry),
+                             select(rodent_id, geometry),
                            .predicate = st_within) %>%
-        mutate(from_uid = reference_id,
+        mutate(from_id = reference_id,
                from_species = reference_species) %>%
-        select(any_of(x = c("from_uid", "from_species", "to_uid", "to_species", "village", "visit", "grid_number")))
+        select(any_of(x = c("from_id", "from_species", "to_id", "to_species", "village", "visit", "grid_number")))
       
       if(nrow(contact) == 0) {
         
-        contact <- tibble(from_uid = reference_id,
+        contact <- tibble(from_id = reference_id,
                           from_species = reference_species,
-                          to_uid = NA,
+                          to_id = NA,
                           to_species = NA,
                           village = reference_village,
                           visit = reference_visit,
@@ -93,43 +88,33 @@ produce_assemblages_site <- function(rodent_data = site_rodents, distance = 15) 
     })
   
   # Nodes
-  nodes = lapply(combined_assemblages, function(x) {unique(c(x$from_uid, x %>%
-                     drop_na(to_uid) %>%
-                     pull(to_uid)))
+  nodes = lapply(combined_assemblages, function(x) {unique(c(x$from_id, x %>%
+                     drop_na(to_id) %>%
+                     pull(to_id)))
     })
   
   vertices <- lapply(nodes, function(x) {
     tibble(node = x) %>%
     left_join(tibble(bind_rows(rodent_data)) %>%
-                select(rodent_uid,
-                       species = initial_species_id,
+                select(rodent_id,
+                       species,
                        village,
                        visit,
                        grid_number,
-                       interpretation,
-                       simple_habitat,
-                       month_set,
-                       year_set,
-                       sex,
-                       age_group),
-              by = c("node" = "rodent_uid")) %>%
+                       landuse),
+              by = c("node" = "rodent_id")) %>%
     mutate(Species = str_to_sentence(str_replace_all(species, "_", " ")),
-           Landuse = str_to_sentence(str_remove_all(simple_habitat, "secondary_")),
-           Village = str_to_sentence(village),
-           Sex = str_to_sentence(sex),
-           Age = str_to_sentence(age_group)) %>%
-    rename(ELISA = interpretation,
-           Month = month_set,
-           Year = year_set,
-           Visit = visit) %>%
-    select(node, Species, Village, Visit, Grid_number = "grid_number", Landuse, ELISA, Sex, Visit, Age, Month, Year)
+           Landuse = str_to_sentence(str_remove_all(landuse, "secondary_")),
+           Village = str_to_sentence(village)) %>%
+    rename(Visit = visit) %>%
+    select(node, Species, Village, Visit, Grid_number = "grid_number", Landuse)
     })
   
   # Edgelist
   edgelist = lapply(combined_assemblages, function(x) {x %>%
     ungroup() %>%
-    drop_na(to_uid) %>%
-    select(from_uid, to_uid) 
+    drop_na(to_id) %>%
+    select(from_id, to_id) 
     })
   
   species_graph <- mapply(x = edgelist, y = vertices, function(x, y) {graph_from_data_frame(d = x, vertices = y, directed = FALSE)
@@ -144,59 +129,38 @@ produce_assemblages_site <- function(rodent_data = site_rodents, distance = 15) 
   
 }
 
-assemblages_15 <- produce_assemblages_site(site_rodents, distance = 15)
-assemblages_30 <- produce_assemblages_site(site_rodents, distance = 30)
-assemblages_50 <- produce_assemblages_site(site_rodents, distance = 50)
+assemblages_30 <- produce_assemblages_site(landuse_rodents, distance = 30)
 
 # Rodent species with less than 10 individuals will be grouped as Other
-species_n <- bind_rows(site_rodents) %>%
-  group_by(initial_species_id) %>%
+species_n <- tibble(bind_rows(landuse_rodents)) %>%
+  group_by(species) %>%
   summarise(N = n()) %>%
-  mutate(species = str_to_sentence(str_replace_all(initial_species_id, "_", " ")))
+  mutate(species = str_to_sentence(str_replace_all(species, "_", " ")))
 
 other_species <- species_n$species[species_n$N <= 10]
 
 # Add further vertex attributes
 
-for(i in 1:length(assemblages_15$graph)) {
+for(i in 1:length(assemblages_30$graph)) {
   # Species grouping
-  vertex_attr(assemblages_15$graph[[i]], name = "Species", index = V(assemblages_15$graph[[i]])$Species %in% other_species) <- "Other"
-  vertex_attr(assemblages_15$full_graph[[i]], name = "Species", index = V(assemblages_15$graph[[i]])$Species %in% other_species) <- "Other"
   vertex_attr(assemblages_30$graph[[i]], name = "Species", index = V(assemblages_30$graph[[i]])$Species %in% other_species) <- "Other"
   vertex_attr(assemblages_30$full_graph[[i]], name = "Species", index = V(assemblages_30$graph[[i]])$Species %in% other_species) <- "Other"
-  vertex_attr(assemblages_50$graph[[i]], name = "Species", index = V(assemblages_50$graph[[i]])$Species %in% other_species) <- "Other"
-  vertex_attr(assemblages_50$full_graph[[i]], name = "Species", index = V(assemblages_50$graph[[i]])$Species %in% other_species) <- "Other"
   
   # Distance of contact definition
-  vertex_attr(assemblages_15$graph[[i]], name = "Contact radius") <- "15m"
   vertex_attr(assemblages_30$graph[[i]], name = "Contact radius") <- "30m"
-  vertex_attr(assemblages_50$graph[[i]], name = "Contact radius") <- "50m"
   
   # Village classification as Urban or Rural
-  vertex_attr(assemblages_15$graph[[i]], name = "Village locations", index = V(assemblages_15$graph[[i]])$"Village" == "Lambayama") <- "Urban"
-  vertex_attr(assemblages_15$graph[[i]], name = "Village locations", index = V(assemblages_15$graph[[i]])$"Village" != "Lambayama") <- "Rural"
   vertex_attr(assemblages_30$graph[[i]], name = "Village locations", index = V(assemblages_30$graph[[i]])$"Village" == "Lambayama") <- "Urban"
   vertex_attr(assemblages_30$graph[[i]], name = "Village locations", index = V(assemblages_30$graph[[i]])$"Village" != "Lambayama") <- "Rural"
-  vertex_attr(assemblages_50$graph[[i]], name = "Village locations", index = V(assemblages_50$graph[[i]])$"Village" == "Lambayama") <- "Urban"
-  vertex_attr(assemblages_50$graph[[i]], name = "Village locations", index = V(assemblages_50$graph[[i]])$"Village" != "Lambayama") <- "Rural"
   
   # Season classification as wet or dry
-  vertex_attr(assemblages_15$graph[[i]], name = "Season", index = V(assemblages_15$graph[[i]])$"Visit" %in% c("1", "2", "5", "6")) <- "Dry"
-  vertex_attr(assemblages_15$graph[[i]], name = "Season", index = V(assemblages_15$graph[[i]])$"Visit" %in% c("3", "4")) <- "Wet"
   vertex_attr(assemblages_30$graph[[i]], name = "Season", index = V(assemblages_30$graph[[i]])$"Visit" %in% c("1", "2", "5", "6")) <- "Dry"
-  vertex_attr(assemblages_30$graph[[i]], name = "Season", index = V(assemblages_30$graph[[i]])$"Visit" %in% c("3", "4")) <- "Wet"
-  vertex_attr(assemblages_50$graph[[i]], name = "Season", index = V(assemblages_50$graph[[i]])$"Visit" %in% c("1", "2", "5", "6")) <- "Dry"
-  vertex_attr(assemblages_50$graph[[i]], name = "Season", index = V(assemblages_50$graph[[i]])$"Visit" %in% c("3", "4")) <- "Wet"
+  vertex_attr(assemblages_30$graph[[i]], name = "Season", index = V(assemblages_30$graph[[i]])$"Visit" %in% c("3", "4", "7", "8")) <- "Wet"
   
-  # Set equivocal ELISA as negative
-  vertex_attr(assemblages_15$graph[[i]], name = "ELISA", index = V(assemblages_15$graph[[i]])$"ELISA" == "Equivocal") <- "Negative"
-  vertex_attr(assemblages_30$graph[[i]], name = "ELISA", index = V(assemblages_30$graph[[i]])$"ELISA" == "Equivocal") <- "Negative"
-  vertex_attr(assemblages_50$graph[[i]], name = "ELISA", index = V(assemblages_50$graph[[i]])$"ELISA" == "Equivocal") <- "Negative"
-  
-}
+  }
 
 # Consistent colours for species
-species_palette_df <- as_tibble(bind_graphs(assemblages_15$graph)) %>%
+species_palette_df <- as_tibble(bind_graphs(assemblages_30$graph)) %>%
   select(Species) %>%
   distinct(Species) %>%
   arrange(Species) %>%
@@ -206,51 +170,27 @@ species_palette <- c(species_palette_df$colour)
 names(species_palette) <- c(species_palette_df$Species)
 
 plot_graph <- list()
-plot_graph$assemblages_15 <- list()
 
-plot_graph$assemblages_15 <- lapply(assemblages_15$graph, function(x) {
+plot_graph <- lapply(assemblages_30$graph, function(x) {
   as_tbl_graph(x) %>%
     ggraph(layout = "fr") +
     geom_edge_link() +
     geom_node_point(aes(colour = Species), size = 3) +
     scale_colour_manual(values = species_palette) +
     labs(colour = "Species",
-         title = paste0(unique(V(x)$Village), ", Grid ", unique(V(x)$Grid_number), ", Visit ", unique(V(x)$Visit)),
-         caption = "15m") +
-    theme_graph(title_size = 16, base_family = "sans")
-})
-
-plot_graph$assemblages_30 <- lapply(assemblages_30$graph, function(x) {
-  as_tbl_graph(x) %>%
-    ggraph(layout = "fr") +
-    geom_edge_link() +
-    geom_node_point(aes(colour = Species), size = 3) +
-    scale_colour_manual(values = species_palette) +
-    labs(colour = "Species",
-         title = paste0(unique(V(x)$Village), ", Grid ", unique(V(x)$Grid_number), ", Visit ", unique(V(x)$Visit)),
+         title = paste0(unique(V(x)$Landuse), ", Visit ", unique(V(x)$Visit)),
          caption = "30m") +
     theme_graph(title_size = 16, base_family = "sans")
 })
 
-plot_graph$assemblages_50 <- lapply(assemblages_50$graph, function(x) {
-  as_tbl_graph(x) %>%
-    ggraph(layout = "fr") +
-    geom_edge_link() +
-    geom_node_point(aes(colour = Species), size = 3) +
-    scale_colour_manual(values = species_palette) +
-    labs(colour = "Species",
-         title = paste0(unique(V(x)$Village), ", Grid ", unique(V(x)$Grid_number), ", Visit ", unique(V(x)$Visit)),
-         caption = "50m") +
-    theme_graph(title_size = 16, base_family = "sans")
-})
 
 # Describing contact networks --------------------------------------------------------
 
-rodent_network <- list(observed_15 = assemblages_15$graph,
-                       observed_30 = assemblages_30$graph,
-                       observed_50 = assemblages_50$graph)
+rodent_network <- list(observed_30 = assemblages_30$graph)
 
 write_rds(rodent_network, here("data", "rodent_network_site.rds"))
+
+rodent_network <- read_rds(here("data", "rodent_network_site.rds"))
 
 # Landuse network metrics
 rodent_networks <- lapply(rodent_network, function(x) lapply(x, function(y) {asNetwork(y)}))
@@ -284,35 +224,29 @@ network_metric_df <- bind_rows(rodent_net_descriptives, .id = "Distance") %>%
 node_plot <- network_metric_df %>%
   ggplot() +
   geom_point(aes(x = nodes, y = network_number)) +
-  facet_wrap(~ Distance) +
   labs(x = "Nodes") +
   theme_bw()
 
 edge_plot <- network_metric_df %>%
   ggplot() +
   geom_point(aes(x = edges, y = network_number)) +
-  facet_wrap(~ Distance, scales = "free") +
   labs(x = "Edges") +
   theme_bw()
 
 mean_d_plot <- network_metric_df %>%
   ggplot() +
   geom_point(aes(x = mean_degree, y = network_number)) +
-  facet_wrap(~ Distance, scales = "free") +
   labs(x = "Mean Degree") +
   theme_bw()
 
 density_plot <- network_metric_df %>%
   ggplot() +
   geom_point(aes(x = density, y = network_number)) +
-  facet_wrap(~ Distance, scales = "free") +
   labs(x = "Density") +
   theme_bw()
 
 # Produce a random graph of similar properties for comparison
 # Random graph of similar size and density
-random_rodent_networks <- vector("list", 3)
-names(random_rodent_networks) <- c("random_15", "random_30", "random_50")
 
 random_rodent_networks <- lapply(rodent_networks, function(x) {
   lapply(x, function(y) {
@@ -344,6 +278,8 @@ random_net_descriptives <- lapply(random_rodent_networks, function(x) {
   return(net_descriptives)
 })
 
+names(random_net_descriptives) <- c("random_30")
+
 random_metric_df <- bind_rows(random_net_descriptives, .id = "Distance") %>%
   arrange(nodes) %>%
   mutate(network_number = fct_inorder(as.character(network_number)))
@@ -351,28 +287,24 @@ random_metric_df <- bind_rows(random_net_descriptives, .id = "Distance") %>%
 random_node_plot <- random_metric_df %>%
   ggplot() +
   geom_point(aes(x = nodes, y = network_number)) +
-  facet_wrap(~ Distance) +
   labs(x = "Nodes") +
   theme_bw()
 
 random_edge_plot <- random_metric_df %>%
   ggplot() +
   geom_point(aes(x = edges, y = network_number)) +
-  facet_wrap(~ Distance, scales = "free") +
   labs(x = "Edges") +
   theme_bw()
 
 random_mean_d_plot <- random_metric_df %>%
   ggplot() +
   geom_point(aes(x = mean_degree, y = network_number)) +
-  facet_wrap(~ Distance, scales = "free") +
   labs(x = "Mean Degree") +
   theme_bw()
 
 random_density_plot <- random_metric_df %>%
   ggplot() +
   geom_point(aes(x = density, y = network_number)) +
-  facet_wrap(~ Distance, scales = "free") +
   labs(x = "Density") +
   theme_bw()
 
@@ -387,20 +319,19 @@ species_degree <- lapply(rodent_networks, function(x) {
   lapply(x, function(y) {
     degrees <- tibble("Species" = y %v% "Species",
                       "Degree" = degree(y),
-                      "Distance" = y %v% "Contact.radius")
+                      "Distance" = y %v% "Contact.radius") })
   }) %>%
-    bind_rows() %>%
-    arrange(-Degree) %>%
-    mutate(Species = factor(Species, levels = names(species_palette))) %>%
-    ggplot() +
-    geom_boxplot(aes(x = fct_rev(Species), y = Degree, fill = Species)) +
-    labs(title = "Mean degree by species",
-         x = "Species") +
-    scale_fill_manual(values = species_palette) +
-    coord_flip() +
-    facet_wrap(~ Distance) +
-    theme_bw()
-  })
+  bind_rows() %>%
+  arrange(-Degree) %>%
+  mutate(Species = factor(Species, levels = names(species_palette))) %>%
+  ggplot() +
+  geom_boxplot(aes(x = fct_rev(Species), y = Degree, fill = Species)) +
+  labs(title = "Mean degree by species",
+       x = "Species") +
+  scale_fill_manual(values = species_palette) +
+  coord_flip() +
+  facet_wrap(~ Distance) +
+  theme_bw()
 
 # Build models ------------------------------------------------------------
 source(here("R", "modified_functions.R"))
@@ -412,35 +343,79 @@ null_models <- lapply(random_rodent_networks, function(x) {
   })
 })
 
+models_run <- tibble(number = 1:length(null_models$observed_30)) %>%
+  rowwise() %>%
+  mutate(null_30 = case_when(is.list(null_models$observed_30[[number]]) ~ TRUE,
+                             TRUE ~ FALSE))
+
 summary_null_models <- lapply(null_models, function(x) {
   lapply(x, function(y) {
-    if(is.list(y)) try(summary.ergm.david(y)) else NA
+    
+    if(is.list(y)) {
+      
+      coeff <- y$coefficient
+      
+      if(coeff == Inf) NA else {
+        
+        try(summary.ergm.david(y)) }} else NA
   })
 })
 
-completed_null_models <- lapply(summary_null_models, function(x)
-  {
-  model_ran <- lapply(x, function(y) is.list(y)) %>%
-    unlist()
-  completed_models <- x[model_ran]
-  
-  return(completed_models)
-  })
+models_run <- models_run %>%
+  rowwise() %>%
+  mutate(null_30_summary = case_when(is.list(summary_null_models$observed_30[[number]]) ~ TRUE,
+                             TRUE ~ FALSE))
 
 # Main effects only models
 rodent_models <- list()
+
 rodent_models$main_effects <- lapply(rodent_networks, function(x) {
-  ergm(x ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")))
+  lapply(x, function(y) {
+    if(length(valid.eids(y)) >= 1) {
+      try(ergm(y ~ edges + nodefactor("Species")))
+    } else NA
+  })
 })
+
 rodent_models_summary <- list()
-rodent_models_summary$main_effects <- lapply(rodent_models$main_effects, function(x) {summary.ergm.david(x)})
+
+rodent_models_summary$main_effects <- lapply(rodent_models$main_effects, function(x) {
+  lapply(x, function(y) {
+    
+    if(is.list(y)) {
+      
+      coeff_min <- min(y$coefficient, na.rm = TRUE)
+      coeff_max <- max(y$coefficient, na.rm = TRUE)
+      
+      if(coeff_min == -Inf | coeff_max == Inf) NA else {
+        
+        try(summary.ergm.david(y)) }} else NA
+  })
+})
 
 # Homophily model for main effects term
 rodent_models$homophily <- lapply(rodent_networks, function(x) {
-  ergm(x ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
-         + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE))
+  lapply(x, function(y) {
+    if(length(valid.eids(y) >= 1)) {
+      try(ergm(y ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+         + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE)))
+         }})
 })
-rodent_models_summary$homophily <- lapply(rodent_models$homophily, function(x) {summary.ergm.david(x)})
+
+rodent_models_summary$homophily <- lapply(rodent_models$homophily, function(x) {
+  lapply(x, function(y) {
+    
+    if(is.list(y)) {
+      
+      coeff_min <- min(y$coefficient, na.rm = TRUE)
+      coeff_max <- max(y$coefficient, na.rm = TRUE)
+      
+      if(coeff_min == -Inf | coeff_max == Inf) NA else {
+        
+        try(summary.ergm.david(y)) }} else NA
+  })
+})
+
 
 # Adding terms, factor for season, match for village location and landuse
 rodent_models$additional_terms_1 <- lapply(rodent_networks, function(x) {

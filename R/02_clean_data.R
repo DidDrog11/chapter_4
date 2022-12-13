@@ -34,3 +34,20 @@ trap_locations <- trap_data$sites %>%
                                     str_detect(site_habitat, "forest") ~ "secondary_forest",
                                     str_detect(site_habitat, "fallow") ~ "agriculture",
                                     str_detect(habitat_group, "agriculture") ~ "agriculture"))
+
+
+# Using chapter 3 extract -------------------------------------------------
+
+unique_rodents <- chapter_3_extract$detections %>%
+  mutate(species = case_when(village == "lambayama" & str_detect(species, "mus_") ~ "mus_musculus",
+                                        grid_number != "7" & str_detect(species, "mus_") ~ "mus_minutoides",
+                                        str_detect(species, "mus_") ~ "mus_musculus",
+                                        str_detect(species, "mastomys_") ~ "mastomys_natalensis",
+                                        str_detect(species, "rattus_") ~ "rattus_rattus",
+                                        str_detect(species, "lophuromys_") ~ "lophuromys_sikapusi",
+                                        TRUE ~ species))
+
+trap_locations <- chapter_3_extract$sites
+
+write_rds(unique_rodents, here("data", "chapter_4_rodents.rds"))
+write_rds(trap_locations, here("data", "chapter_4_traps.rds"))

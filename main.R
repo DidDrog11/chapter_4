@@ -1,14 +1,14 @@
 # Load packages and project wide values
-source(here::here("R", "setup.R"))
+source(here::here("R", "00_setup.R"))
 
 # Load cleaned data
-source(here("R", "load_data.R"))
+source(here("R", "01_load_data.R"))
 
 # Further clean the data for this analysis
-source(here("R", "clean_data.R"))
+source(here("R", "02_clean_data.R"))
 
 # Descriptives
-source(here("R", "descriptive.R"))
+source(here("R", "03_descriptive.R"))
 
 # Rodent networks
-source(here("R", "rodent_networks.R"))
+source(here("R", "05_site_networks.R"))

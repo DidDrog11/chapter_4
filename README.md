@@ -37,3 +37,10 @@ The manuscript or report will be stored in a `report` folder. This will be writt
 -   Investigated the difference between landuse types
 -   Tested these rodents for antibodies
 -   Described the networks of those with evidence of infection
+
+## Next steps
+
+- [ ] Clearly identify Estimand (number of rodents that are within an area and are able to come into contact with each other).
+- [ ] Generate estimates of abundance for each species in land use type to account for missing data, do this at a species level and land use type level. Check whether abundance is dramatically different for seasons
+- [ ] Collapse on land use type and village but incorporate one or both as node factor
+- [ ] Use coefficients rather than sampling from the simulated networks
