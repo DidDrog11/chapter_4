@@ -14,9 +14,9 @@ landuse_rodents <- rodents %>%
   group_split()
 
 trap_locations <- trap_locations %>%
-  left_join(season, by = "visit")
+  left_join(visit_season, by = "visit")
 
-produce_assemblages_site <- function(rodent_data = site_rodents, distance = 15) {
+produce_assemblages_site <- function(rodent_data = landuse_rodents, distance = 30) {
   
   # Define distance as meters
   units(distance) <- "meters"
@@ -183,6 +183,39 @@ plot_graph <- lapply(assemblages_30$graph, function(x) {
     theme_graph(title_size = 16, base_family = "sans")
 })
 
+assemblages_landuse <- list()
+
+assemblages_landuse$forest <- assemblages_30$graph[9:14]
+assemblages_landuse$agriculture <- assemblages_30$graph[1:8]
+assemblages_landuse$village <- assemblages_30$graph[15:22]
+
+write_rds(assemblages_landuse, here("data", "rodent_landuse_networks.rds"))
+
+plot_landuse_graph <- list()
+
+plot_landuse_graph <- lapply(assemblages_landuse, function(x) {
+  bind_graphs(x) %>%
+    ggraph(layout = "fr") +
+    geom_edge_link() +
+    geom_node_point(aes(colour = Species), size = 3) +
+    scale_colour_manual(values = species_palette) +
+    facet_graph(~ Visit, row_type = "node") +
+    labs(colour = "Species",
+         title = paste0(unique(bind_graphs(x) %>%
+                                 pull(Landuse))),
+         x = element_blank(),
+         y = element_blank(),
+         caption = "30m") +
+    theme_bw() +
+    theme(axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank())
+})
+
+save_plot(plot = plot_landuse_graph$forest, here("output", "forest_landuse_graph.png"), base_width = 10)
+save_plot(plot = plot_landuse_graph$agriculture, here("output", "agriculture_landuse_graph.png"), base_width = 14)
 
 # Describing contact networks --------------------------------------------------------
 
