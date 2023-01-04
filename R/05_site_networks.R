@@ -1,3 +1,13 @@
+source(here::here("R", "00_setup.R"))
+source(here("R", "01_load_data.R"))
+source(here("R", "02_clean_data.R"))
+source(here("R", "03_descriptive.R"))
+estimated_abundance <- if(file.exists(here("data", "estimated_population.rds"))) {
+  read_rds(here("data", "estimated_population.rds")) 
+} else {
+  source(here("R", "06_estimating_abundance.R"))
+}
+
 # Load in the rodent data and split by landuse and visit
 rodents <- unique_rodents %>%
   drop_na(species) %>%
@@ -15,6 +25,14 @@ landuse_rodents <- rodents %>%
 
 trap_locations <- trap_locations %>%
   left_join(visit_season, by = "visit")
+
+# Rodent species with less than 10 individuals will be grouped as Other
+species_n <- tibble(bind_rows(landuse_rodents)) %>%
+  group_by(species) %>%
+  summarise(N = n()) %>%
+  mutate(species = str_to_sentence(str_replace_all(species, "_", " ")))
+
+other_species <- species_n$species[species_n$N <= 10]
 
 produce_assemblages_site <- function(rodent_data = landuse_rodents, distance = 30) {
   
@@ -104,6 +122,8 @@ produce_assemblages_site <- function(rodent_data = landuse_rodents, distance = 3
                        landuse),
               by = c("node" = "rodent_id")) %>%
     mutate(Species = str_to_sentence(str_replace_all(species, "_", " ")),
+           Species = case_when(Species %in% other_species ~ "Other spp",
+                               TRUE ~ Species),
            Landuse = str_to_sentence(str_remove_all(landuse, "secondary_")),
            Village = str_to_sentence(village)) %>%
     rename(Visit = visit) %>%
@@ -112,10 +132,11 @@ produce_assemblages_site <- function(rodent_data = landuse_rodents, distance = 3
   
   # Edgelist
   edgelist = lapply(combined_assemblages, function(x) {x %>%
-    ungroup() %>%
-    drop_na(to_id) %>%
-    select(from_id, to_id) 
-    })
+      ungroup() %>%
+      drop_na(to_id) %>%
+      select(from_id, to_id) %>%
+      mutate(value = 1)
+  })
   
   species_graph <- mapply(x = edgelist, y = vertices, function(x, y) {graph_from_data_frame(d = x, vertices = y, directed = FALSE)
     })
@@ -130,14 +151,6 @@ produce_assemblages_site <- function(rodent_data = landuse_rodents, distance = 3
 }
 
 assemblages_30 <- produce_assemblages_site(landuse_rodents, distance = 30)
-
-# Rodent species with less than 10 individuals will be grouped as Other
-species_n <- tibble(bind_rows(landuse_rodents)) %>%
-  group_by(species) %>%
-  summarise(N = n()) %>%
-  mutate(species = str_to_sentence(str_replace_all(species, "_", " ")))
-
-other_species <- species_n$species[species_n$N <= 10]
 
 # Add further vertex attributes
 
@@ -169,53 +182,50 @@ species_palette_df <- as_tibble(bind_graphs(assemblages_30$graph)) %>%
 species_palette <- c(species_palette_df$colour)
 names(species_palette) <- c(species_palette_df$Species)
 
-plot_graph <- list()
+# To plot these networks uncomment the below script
+#source(here("R", "07_plot_networks.R"))
 
-plot_graph <- lapply(assemblages_30$graph, function(x) {
-  as_tbl_graph(x) %>%
-    ggraph(layout = "fr") +
-    geom_edge_link() +
-    geom_node_point(aes(colour = Species), size = 3) +
-    scale_colour_manual(values = species_palette) +
-    labs(colour = "Species",
-         title = paste0(unique(V(x)$Landuse), ", Visit ", unique(V(x)$Visit)),
-         caption = "30m") +
-    theme_graph(title_size = 16, base_family = "sans")
-})
+# Add unobserved individuals ----------------------------------------------
+# The number of unobserved individuals is derived from the estimating abundance script 06_estimating_abundance.R
+# This assumes a closed population with N individuals at each site at all time points
+# This needs to be translated to fit within the structure for these networks, i.e. multiple sites for a single landuse type at different timepoints
 
-assemblages_landuse <- list()
+formatted_abundance <- estimated_abundance %>%
+  mutate(Landuse = str_to_sentence(landuse),
+         Village = str_to_sentence(village),
+         Grid_number = grid_number) %>%
+  pivot_longer(cols = contains("_mode"), names_to = "Species", values_to = "Estimated") %>%
+  select(Species, Village, Grid_number, Landuse, Estimated) %>%
+  mutate(Species = str_to_sentence(str_replace(str_remove_all(Species, "_mode"), "_", " ")))
+  
+expanded_assemblages <- list()
+expanded_assemblages$nodelist <- list()
 
-assemblages_landuse$forest <- assemblages_30$graph[9:14]
-assemblages_landuse$agriculture <- assemblages_30$graph[1:8]
-assemblages_landuse$village <- assemblages_30$graph[15:22]
-
-write_rds(assemblages_landuse, here("data", "rodent_landuse_networks.rds"))
-
-plot_landuse_graph <- list()
-
-plot_landuse_graph <- lapply(assemblages_landuse, function(x) {
-  bind_graphs(x) %>%
-    ggraph(layout = "fr") +
-    geom_edge_link() +
-    geom_node_point(aes(colour = Species), size = 3) +
-    scale_colour_manual(values = species_palette) +
-    facet_graph(~ Visit, row_type = "node") +
-    labs(colour = "Species",
-         title = paste0(unique(bind_graphs(x) %>%
-                                 pull(Landuse))),
-         x = element_blank(),
-         y = element_blank(),
-         caption = "30m") +
-    theme_bw() +
-    theme(axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank())
-})
-
-save_plot(plot = plot_landuse_graph$forest, here("output", "forest_landuse_graph.png"), base_width = 10)
-save_plot(plot = plot_landuse_graph$agriculture, here("output", "agriculture_landuse_graph.png"), base_width = 14)
+for(i in 1:length(assemblages_30$nodelist)) {
+  
+  visit_nodelist <- str_sub(assemblages_30$nodelist[[i]]$node[1], 1, 1)
+  
+  nodelist <- formatted_abundance %>%
+    filter(Landuse %in% assemblages_30$nodelist[[i]]$Landuse) %>%
+    filter(Species %in% assemblages_30$nodelist[[i]]$Species) %>%
+    filter(Village %in% assemblages_30$nodelist[[i]]$Village) %>%
+    filter(Grid_number %in% assemblages_30$nodelist[[i]]$Grid_number) %>%
+    full_join(assemblages_30$nodelist[[i]] %>%
+                group_by(Species, Village, Grid_number) %>%
+                summarise(Observed = n())) %>%
+    mutate(Observed = replace_na(Observed, 0),
+           to_add = Estimated - Observed) %>%
+    uncount(to_add) %>%
+    select(-Estimated, -Observed) %>%
+    mutate(id = 999 - row_number()) %>%
+    mutate(node = paste0(visit_nodelist, "_", str_to_upper(str_sub(Village, 1, 3)), "_", id),
+           Visit = as.numeric(visit_nodelist)) %>%
+    select(-id)
+  
+  expanded_assemblages$nodelist[[i]] <- bind_rows(assemblages_30$nodelist[[i]], nodelist)
+  
+}
+  
 
 # Describing contact networks --------------------------------------------------------
 
@@ -223,10 +233,13 @@ rodent_network <- list(observed_30 = assemblages_30$graph)
 
 write_rds(rodent_network, here("data", "rodent_network_site.rds"))
 
+# 22 site networks have been produced
+
 rodent_network <- read_rds(here("data", "rodent_network_site.rds"))
 
 # Landuse network metrics
 rodent_networks <- lapply(rodent_network, function(x) lapply(x, function(y) {asNetwork(y)}))
+
 
 rodent_net_descriptives <- lapply(rodent_networks, function(x) {
   
@@ -239,6 +252,7 @@ rodent_net_descriptives <- lapply(rodent_networks, function(x) {
                            edges = length(valid.eids(x[[i]])),
                            mean_degree = mean(degree(x[[i]], gmode = "graph")),
                            sd_degree = sd(degree(x[[i]], gmode = "graph")),
+                           landuse = x[[i]]$val[[1]][["Landuse"]],
                            density = if(is.nan(graph.density(asIgraph(x[[i]])))) NA else graph.density(asIgraph(x[[i]])))
                            
     
@@ -256,20 +270,32 @@ network_metric_df <- bind_rows(rodent_net_descriptives, .id = "Distance") %>%
 
 node_plot <- network_metric_df %>%
   ggplot() +
-  geom_point(aes(x = nodes, y = network_number)) +
-  labs(x = "Nodes") +
+  geom_point(aes(x = nodes, y = network_number, colour = landuse)) +
+  labs(x = "Nodes",
+       colour = "Landuse",
+       y = element_blank(),
+       title = "Nodes") +
+  scale_colour_manual(values = landuse_palette) +
   theme_bw()
 
 edge_plot <- network_metric_df %>%
   ggplot() +
-  geom_point(aes(x = edges, y = network_number)) +
-  labs(x = "Edges") +
+  geom_point(aes(x = edges, y = network_number, colour = landuse)) +
+  labs(x = "Edges",
+       colour = "Landuse",
+       title = "Edges",
+       y = element_blank()) +
+  scale_colour_manual(values = landuse_palette) +
   theme_bw()
 
 mean_d_plot <- network_metric_df %>%
   ggplot() +
-  geom_point(aes(x = mean_degree, y = network_number)) +
-  labs(x = "Mean Degree") +
+  geom_point(aes(x = mean_degree, y = network_number, colour = landuse)) +
+  labs(x = "Degree",
+       colour = "Landuse",
+       title = "Degree",
+       y = element_blank()) +
+  scale_colour_manual(values = landuse_palette) +
   theme_bw()
 
 density_plot <- network_metric_df %>%
@@ -277,6 +303,14 @@ density_plot <- network_metric_df %>%
   geom_point(aes(x = density, y = network_number)) +
   labs(x = "Density") +
   theme_bw()
+
+save_plot(plot = plot_grid(plotlist = list(node_plot,
+                                           edge_plot,
+                                           mean_d_plot),
+                           nrow = 3),
+          filename = here("output", "network_descriptives.png"),
+          base_width = 8,
+          base_height = 12)
 
 # Produce a random graph of similar properties for comparison
 # Random graph of similar size and density
@@ -452,13 +486,29 @@ rodent_models_summary$homophily <- lapply(rodent_models$homophily, function(x) {
 
 # Adding terms, factor for season, match for village location and landuse
 rodent_models$additional_terms_1 <- lapply(rodent_networks, function(x) {
-  ergm(x ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+  lapply(x, function(y) {
+    if(length(valid.eids(y) >= 1)) {
+      try(ergm(y ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
          + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
-         nodefactor("Season", levels = "Dry") +
          nodematch("Village.locations", levels =  "Rural", diff = TRUE) +
-         nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE))
+         nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE)))
+      }})
 })
-rodent_models_summary$additional_terms_1 <- lapply(rodent_models$additional_terms_1, function(x) {summary.ergm.david(x)})
+
+rodent_models_summary$additional_terms_1 <- lapply(rodent_models$additional_terms_1, function(x) {
+  lapply(x, function(y) {
+    
+    if(is.list(y)) {
+      
+      coeff_min <- min(y$coefficient, na.rm = TRUE)
+      coeff_max <- max(y$coefficient, na.rm = TRUE)
+      
+      if(coeff_min == -Inf | coeff_max == Inf) NA else {
+        
+        try(summary.ergm.david(y)) }} else NA
+  })
+})
+
 
 # Adding terms, match for season, village location and landuse
 rodent_models$additional_terms_2 <- lapply(rodent_networks, function(x) {
