@@ -279,6 +279,7 @@ for(i in 1:length(expanded_assemblages$adjacency)) {
   
 }
 
+
 # Describing contact networks --------------------------------------------------------
 
 rodent_network <- expanded_assemblages$network
@@ -296,7 +297,7 @@ rodent_net_descriptives <- lapply(rodent_network, function(x) {
     
     observed <- x%v%"Observed"
     observed_subgraph <- x %s% which(observed == TRUE)
-    
+
     descriptives <- tibble(nodes = length(x %v% "vertex.names"),
                            observed_nodes = table(x%v%"Observed")["TRUE"],
                            unobserved_nodes = table(x%v%"Observed")["FALSE"],
@@ -368,7 +369,6 @@ save_plot(plot = plot_grid(plotlist = list(node_plot,
           filename = here("output", "network_descriptives.png"),
           base_width = 8,
           base_height = 12)
-
 
 # Plot species level properties -------------------------------------------
 
