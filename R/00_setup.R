@@ -18,7 +18,8 @@ pkgs =
     "sf",
     "statnet",
     "tidygraph",
-    "tidyverse"
+    "tidyverse",
+    "unmarked"
   )
 
 pacman::p_load(pkgs, character.only = T)
@@ -28,6 +29,9 @@ SL_UTM <- "EPSG:32629"
 
 village_palette <- c("#7a0177", "#fec44f", "#005120", "#253494")
 names(village_palette) <-  c("Lalehun", "Seilama", "Lambayama", "Baiama")
+
+landuse_palette <- c("#00913a", "#FEC44F", "#a13b9e")
+names(landuse_palette) <- c("Forest", "Agriculture", "Village")
 
 # Allocate seasons to months
 season <- tibble(month = 1:12, season = c(rep("Dry", 4), rep("Rainy", 6), rep("Dry", 2)))
