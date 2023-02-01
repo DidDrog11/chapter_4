@@ -441,22 +441,23 @@ rodent_models_summary$homophily <- lapply(rodent_models$homophily, function(x) {
   
 })
 
-# Adding terms, factor for season, match for village location and landuse
-rodent_models$additional_terms_1 <- lapply(rodent_networks, function(x) {
-  lapply(x, function(y) {
-    if(length(valid.eids(y) >= 1)) {
-      try(ergm(y ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
-         + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
-         nodematch("Village.locations", levels =  "Rural", diff = TRUE) +
-         nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE)))
-      }})
-})
-
 
 # Current point -----------------------------------------------------------
 write_rds(rodent_network, here("temp", "rodent_networks_2023-01-04.rds"))
 write_rds(rodent_models, here("temp", "rodent_models_2023-01-04.rds"))
 write_rds(rodent_models_summary, here("temp", "rodent_models_summary_2023-01-04.rds"))
+
+
+# Adding terms, factor for season, match for village location and landuse
+rodent_models$additional_terms_1 <- lapply(rodent_networks, function(x) {
+  lapply(x, function(y) {
+    if(length(valid.eids(y) >= 1)) {
+      try(ergm(y ~ edges + nodefactor("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides")) +
+                 + nodematch("Species", levels = c("Crocidura spp", "Mastomys natalensis", "Praomys spp", "Lophuromys sikapusi", "Mus musculus", "Rattus rattus", "Mus minutoides"), diff = TRUE) +
+                 nodematch("Village.locations", levels =  "Rural", diff = TRUE) +
+                 nodematch("Landuse", levels = c("Agriculture", "Village"), diff = TRUE)))
+    }})
+})
 
 
 rodent_models_summary$additional_terms_1 <- lapply(rodent_models$additional_terms_1, function(x) {

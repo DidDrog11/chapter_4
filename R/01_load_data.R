@@ -10,7 +10,7 @@ combined_data$ELISA_enriched <- combined_data$ELISA_enriched %>%
                                         str_detect(initial_species_id, "lophuromys_") ~ "lophuromys_sikapusi",
                                         TRUE ~ initial_species_id))
 
-trap_data <- readRDS(gzcon(url("https://github.com/DidDrog11/chapter_3/raw/main/data/data_for_export/chapter_4_extract.rds")))
+trap_data <- readRDS(gzcon(url("https://github.com/DidDrog11/chapter_3/raw/observed_data/data/data_for_export/chapter_4_extract.rds")))
 
 write_rds(combined_data, here("input", "ELISA_data.rds"))
 write_rds(trap_data, here("input", "trap_data.rds"))

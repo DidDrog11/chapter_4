@@ -10,13 +10,14 @@ fontsize: 12pt
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
                       cache = FALSE, tidy = FALSE, size = "small")
 ```
+## Lassa ELISA
 
 
 This is the minimally adapted protocol for the Lassa fever IgG ELISA protocol for use in Sierra Leone.
 
 The BLACKBOX LASV IgG ELISA kit is purchased from the Diagnostics Development Laboratory at the Bernhard Nocht Institute for Tropical Medicine. They are contactable at ddl_support@bnitm.de or on +49 40 42818 513. This protocol has been adapted from the November 2019 version. When making the order for the kit, request extra wash buffer and notify them that we are using manual wash processes so we use more of than would be expected.
 
-# Kit contents
+### Kit contents
 
 Kit allows 96 reactions, so with controls 91 rodent samples can be tested per kit.
 
@@ -35,7 +36,7 @@ Kit allows 96 reactions, so with controls 91 rodent samples can be tested per ki
 | Adhesive foil | 2 pieces | N/A | N/A |
 | Manufacturer SOP | 1 | N/A | N/A |
 
-# Required further equipment
+#### Required further equipment
 
 | Component | Number |
 | ------ | -- |
@@ -62,15 +63,17 @@ Kit allows 96 reactions, so with controls 91 rodent samples can be tested per ki
 | Large sample tubes (10ml +) | multiple |
 | Vortex or other means of mixing samples | 1 |
 
-# Consumables required per run (96 well plate)
+### Protocol
 
+#### Sample selection
 
+All samples will be tested for the presence of *Lassa mammarenavirus* antibodies. Whole blood will be used where available, for rodents with dried blood spots only samples for ELISA testing will be eluted from the filter paper following the process of the DBS elution protocol.
 
-# 1 - Diluting wash buffer
+#### Diluting wash buffer
 
 The wash buffer will be used in 1x concentration and is stable in the fridge for 1 week. Take 100ml of the Wash Buffer and put it into a 1L glass container and add 900ml of deionised water. Pour into a squeeze bottle.
 
-# 2 - Specimen preparation
+#### Specimen preparation
 
 Rodent blood samples are preferred. 
 
@@ -80,7 +83,7 @@ Samples will be selected and removed from the freezer to thaw. We will be using 
 
 Then add 1µl of sample to each well. Being careful about the sample going into the right well. Take a photo of the arrangement or document in lab notebook.
 
-# 3 - Conjugate preparation
+#### Conjugate preparation
 
 This is a 2 step dilution.
 
@@ -113,11 +116,11 @@ This pre-dilution will be further diluted to produce the Conjugate Working Solut
 
 This will be added to the wells after washing.
 
-# 4 - Strip preparation
+#### Strip preparation
 
 Wash the strips 3 times with the diluted Wash Buffer using the squeeze bottle to fill each well with buffer. Leave for 30 seconds and empty the wells over the sink. Do this three times and once completed tap out the wells on some tissue paper to remove the liquid within the wells. Without letting the wells dry completely move onto the next step.
 
-# 5 - Adding Conjugate working solution, control samples and rodent samples
+#### Adding Conjugate working solution, control samples and rodent samples
 
 Place the conjugate working dilution into a reservoir. Using a multichannel pipette we will place 25µl of this into each well. The same pipette tips can be used for all of these columns as there is no risk of cross-contamination here. 
 
@@ -127,13 +130,13 @@ Using a normal pipette take 25µl of the negative control and place into the fir
 
 The base of each well needs to be completely covered with solution. If there are any large bubbles at this step use a clean dry pipette tip to pop the bubbles. Each well will need it's own pipette tip as there is risk of cross-contamination of samples if the same tip is used for multiple wells. The plate can then be covered and sealed with the adhesive foil.
 
-# 6 - Incubation for 24 hours
+#### Incubation for 24 hours
 
 The plate should be placed in a container on top of some wet paper towels and put in the fridge at 4°C for 24 hours.
 
 **END OF DAY 1**
 
-# 7 - HRP-Streptavidin preparation
+#### 7 - HRP-Streptavidin preparation
 
 This step should be performed ~ 10 minutes prior to the end of the 24 hour incubation.
 
@@ -158,30 +161,30 @@ We will next incubate the wells with HRP-Streptavidin which will produce the cal
 
 </center>
 
-# 8 - Plate washing
+#### Plate washing
 
 Wash the strips with 5 times with the Wash Buffer allowing the wells to soak for 30 seconds with each addition of Wash Buffer. Shake out over a sink for all of the steps and on the final wash tap out the excess fluid on paper towels. Do not let the wells dry completely before adding the HRP-Streptavidin working solution.
 
-# 9 - Adding HRP-Streptavidin solution
+#### Adding HRP-Streptavidin solution
 
 Empty the vial of the working dilution of HRP-Streptavidin into a reservoir. Using a multichannel pipette draw up 50µl of the solution and place into each of the wells by running down the side to prevent formation of bubbles. Change the pipette tips for each column as this will prevent cross-contamination of wells. Ensure that the bottom of the wells are completely covered and seal with adhesive foil.
 
-# 10 - Incubation for 1 hour
+#### Incubation for 1 hour
 
 Place the sealed plate into a container with wet paper towels and leave in the fridge for 1 hour.
 
-# 11 - Plate washing
+#### Plate washing
 
 Wash the strips with 5 times with the Wash Buffer allowing the wells to soak for 30 seconds with each addition of Wash Buffer. Shake out over a sink for all of the steps and on the final wash tap out the excess fluid on paper towels. Do not let the wells dry completely before adding the Substrate.
 
-# 12 - Addition of Substrate
+#### Addition of Substrate
 
 100µl of Substrate will go into each well. Pour the required amount of substrate with some additional amount into a reservoir (i.e. for 96 wells 9600µl + ~ 200µl). Using a multichannel pipette add 100µl of Substrate into each well against the wall to prevent bubbles and ensure the base of the wells are covered. Incubate the plate for 10 minutes at room temperature (20 - 25°C) in the dark, this can be done by placing a thick box over the plate. At this point positive wells will turn blue.
 
-# 13 - Stopping the reaction
+#### Stopping the reaction
 
 100µl of Stopping solution will go into each well. Pour the required amount of solution with some additional amount into a reservoir (i.e. for 96 wells 9600µl + ~ 200µl). Using a multichannel pipette add 100µl of the stopping solution into each well against the wall to prevent bubbles and ensure the base of the wells are covered. The blue colour in the wells will now become yellow. The plate must be read within 30 mins of adding the stop solution.
 
-# 14 - Measurement
+#### Measurement
 
 Measure the optical density of the plate at 450nm and 620nm using the microplate reader. **Add method depending on the plate reader in the lab in Sierra Leone**. The results will be associated with the plate layout that was produced at the sample preparation stage.
