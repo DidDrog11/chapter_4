@@ -187,6 +187,7 @@ produce_abundance <- function(binary_list = rodents_ab_binary, species_name = "m
 
 crocidura <- produce_abundance(species_name = "crocidura_spp")
 lophuromys <- produce_abundance(species_name = "lophuromys_sikapusi")
+malacomys_spp <- produce_abundance(species_name = "malacomys_spp")
 mastomys_natalensis <- produce_abundance(species_name = "mastomys_natalensis")
 mus_minutoides <- produce_abundance(species_name = "mus_minutoides")
 mus_musculus <- produce_abundance(species_name = "mus_musculus")
@@ -195,6 +196,7 @@ praomys_spp <- produce_abundance(species_name = "praomys_spp")
 rattus_rattus <- produce_abundance(species_name = "rattus_rattus")
 
 combined_abundance <- left_join(crocidura$output, lophuromys$output, by = c("site_number", "village", "landuse")) %>%
+  left_join(malacomys_spp$output, by = c("site_number", "village", "landuse")) %>%
   left_join(mastomys_natalensis$output, by = c("site_number", "village", "landuse")) %>%
   left_join(mus_minutoides$output, by = c("site_number", "village", "landuse")) %>%
   left_join(mus_musculus$output, by = c("site_number", "village", "landuse")) %>%
@@ -220,5 +222,5 @@ ggplot(ab_df) +
                aes(y = observed, yend = observed, x = as.numeric(species) - 0.45, xend = as.numeric(species) + 0.45, linetype = landuse), position = position_dodge()) +
   theme_bw()
 
-write_rds(combined_abundance, here("data", "estimated_population.rds"))
+write_rds(combined_abundance, here("data", "estimated_population_combined_visit.rds"))
 
