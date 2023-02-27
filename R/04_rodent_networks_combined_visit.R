@@ -327,58 +327,6 @@ rodent_net_descriptives <- lapply(rodent_network, function(x) {
   relocate(network_number, landuse, n_species) %>%
   mutate(network_number = fct_inorder(as.character(network_number)))
 
-node_plot <- network_metric_df %>%
-  ggplot() +
-  geom_point(aes(x = nodes, y = network_number, colour = landuse)) +
-  labs(x = "Nodes",
-       colour = "Landuse",
-       y = element_blank(),
-       title = "Nodes") +
-  scale_colour_manual(values = landuse_palette) +
-  theme_bw()
-
-edge_plot <- network_metric_df %>%
-  rowwise() %>%
-  mutate(edges = sum(missing_edges, non_missing_edges)) %>%
-  ggplot() +
-  geom_point(aes(x = edges, y = network_number, colour = landuse)) +
-  labs(x = "Edges",
-       colour = "Landuse",
-       title = "Edges",
-       y = element_blank()) +
-  scale_colour_manual(values = landuse_palette) +
-  theme_bw()
-
-mean_d_plot <- network_metric_df %>%
-  ggplot() +
-  geom_point(aes(x = mean_degree_observed, y = network_number, colour = landuse)) +
-  labs(x = "Mean degree",
-       colour = "Landuse",
-       title = "Degree (observed)",
-       y = element_blank()) +
-  scale_colour_manual(values = landuse_palette) +
-  theme_bw()
-
-density_plot <- network_metric_df %>%
-  mutate(density = replace_na(density, 0)) %>%
-  ggplot() +
-  geom_point(aes(x = density, y = network_number, colour = landuse)) +
-  scale_colour_manual(values = landuse_palette) +
-  labs(x = "Density",
-       y = element_blank(),
-       colour = "Landuse",
-       title = "Network density") +
-  theme_bw()
-
-save_plot(plot = plot_grid(plotlist = list(node_plot,
-                                           edge_plot,
-                                           mean_d_plot,
-                                           density_plot),
-                           nrow = 4),
-          filename = here("output", "network_descriptives.png"),
-          base_width = 8,
-          base_height = 12)
-
 # Plot species level properties -------------------------------------------
 
 species_degree <- lapply(rodent_network, function(x) {
@@ -454,9 +402,9 @@ rodent_models_summary$homophily <- lapply(rodent_models$homophily, function(x) {
 
 # Save models -------------------------------------------------------------
 dir.create(here("temp"))
-write_rds(rodent_network, here("temp", "rodent_networks_2023-01-04.rds"))
-write_rds(rodent_models, here("temp", "rodent_models_2023-01-04.rds"))
-write_rds(rodent_models_summary, here("temp", "rodent_models_summary_2023-01-04.rds"))
+write_rds(rodent_network, here("temp", "rodent_networks_2023-02-23.rds"))
+write_rds(rodent_models, here("temp", "rodent_models_2023-02-23.rds"))
+write_rds(rodent_models_summary, here("temp", "rodent_models_summary_2023-02-23.rds"))
 
 
 

@@ -1,6 +1,6 @@
 source(here::here("R", "00_setup.R"))
 
-rodent_models_summary <- read_rds(here("temp", "rodent_models_summary_2023-01-04.rds"))
+rodent_models_summary <- read_rds(here("temp", "rodent_models_summary_2023-02-23.rds"))
 
 # Odds ratios for null model ----------------------------------------------
 # What is the probability of a tie forming between nodes
@@ -20,7 +20,7 @@ null_model_plot <- bind_rows(as.data.frame(null_model[[1]]$coefficients),
   geom_vline(aes(xintercept = 1), linetype = "dashed") +
   coord_cartesian(xlim = c(0, 1)) +
   theme_bw() +
-  labs(title = "Probability of a tie between two individuals")
+  labs(title = "Odds of a tie being observed between two individuals")
 
 main_effects <- rodent_models_summary$main_effects
 
@@ -47,7 +47,7 @@ main_effect_plot <- bind_rows(as.data.frame(main_effects[[1]]$coefficients),
   coord_cartesian(xlim = c(0, 8)) +
   theme_bw() +
   guides(alpha = "none") +
-  labs(title = "Probability of a tie between two individuals by species")
+  labs(title = "Odds of a tie being observed between two individuals by species")
 
 homophily_term <- rodent_models_summary$homophily
 
@@ -81,7 +81,7 @@ homophily_model_plot <- bind_rows(as.data.frame(homophily_term[[1]]$coefficients
   theme_bw() +
   guides(alpha = "none") +
   labs(caption = "n.b. Log10 x axis, varies by facet",
-       title = "Probability of a tie between two individuals by species and by homophily",
+       title = "Odds of a tie being observed between two individuals by species and by homophily",
        subtitle = "Unstable estimates removed")
 
 save_plot(plot = main_effect_plot, filename = here("output", "main_effect.png"), base_height = 6, base_width = 8)

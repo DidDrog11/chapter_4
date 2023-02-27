@@ -35,7 +35,7 @@ Using the locations of trapped rodents we can make assumptions about their habit
 This chapter will attempt to address the following questions.
 
   1. Do rodents have range overlap suggesting that they come into contact at greater or lesser rates?
-  2. Do these contact rates vary by landuse type and season?
+  2. Do these contact rates vary by landuse type?
   3. Does the probability of a contact vary between and within species?
   4. What are the implications for viral transmission through these recreated networks?
 
