@@ -11,6 +11,7 @@ pkgs =
     "intergraph",
     "lubridate",
     "mapview",
+    "metafor",
     "osmdata",
     "patchwork",
     "RColorBrewer",

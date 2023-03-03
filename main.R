@@ -12,3 +12,8 @@ source(here("R", "03_descriptive.R"))
 
 # Rodent networks
 source(here("R", "05_site_networks.R"))
+
+# Keep all 21/22 networks perform meta-analysis on the network by landuse type
+# Limitations around the density of forest settings
+# Further sampling needed
+# Other rodents set as <50
