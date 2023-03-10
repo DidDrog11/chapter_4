@@ -7,6 +7,7 @@ pkgs =
     "ggforce",
     "ggraph",
     "here",
+    "HomeRange",
     "igraph",
     "intergraph",
     "lubridate",

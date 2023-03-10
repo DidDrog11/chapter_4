@@ -11,7 +11,10 @@ source(here("R", "02_clean_data.R"))
 source(here("R", "03_descriptive.R"))
 
 # Rodent networks
-source(here("R", "05_site_networks.R"))
+source(here("R", "04_rodent_networks.R"))
+
+# Conduct meta-analysis of rodent networks
+source(here("R", "05_interpreting_network_models.R"))
 
 # Keep all 21/22 networks perform meta-analysis on the network by landuse type
 # Limitations around the density of forest settings
