@@ -2,6 +2,7 @@
 source(here::here("R", "00_setup.R"))
 
 # Load cleaned data
+# Data is currently dependent on chapter 3 being updated so run first
 source(here("R", "01_load_data.R"))
 
 # Further clean the data for this analysis

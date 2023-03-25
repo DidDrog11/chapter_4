@@ -1,16 +1,68 @@
 source(here::here("R", "00_setup.R"))
 
-rodent_models_summary <- read_rds(here("temp", "rodent_models_summary_2023-03-02.rds"))
-rodent_network <- read_rds(here("temp", "rodent_networks_2023-03-02.rds"))
-rodent_data <- read_rds(here("data", "expanded_assemblages_2023-03-02.rds"))
+#rodent_models_summary <- read_rds(here("temp", "rodent_models_summary_2023-03-23.rds"))
+#rodent_network <- read_rds(here("temp", "rodent_networks_2023-03-23.rds"))
+rodent_data <- read_rds(here("data", "expanded_assemblages_2023-03-22.rds"))
 
+final_model <- read_rds(here("temp", "final_model_2023-03-23.rds"))
+final_model_summary <- final_model$final_model
 `%s%` <- network::`%s%`
+
+# Model comparisons -------------------------------------------------------
+
+model_aic <- list()
+
+for(i in 1:length(rodent_models_summary)) {
+  
+  model_version <- rodent_models_summary[[i]]
+  
+  aic <- vector()
+  
+  for(n in 1:length(model_version)) {
+    
+    if(is.list(model_version[[n]])) {
+      
+      aic[n] = model_version[[n]]$aic
+      
+    } else {
+      
+      aic[n] = NA
+      
+    }
+    
+  }
+  
+  model_aic[[i]] <- tibble(network = 1:length(model_version),
+                           aic = aic,
+                           model_version = i)
+  
+  }
+
+compare_aic <- bind_rows(model_aic) %>%
+  mutate(model_version = case_when(model_version == 1 ~ "edge",
+                                   model_version == 2 ~ "edge + nodefactor",
+                                   model_version == 3 ~ "edge + nodefactor + nodematch")) %>%
+  drop_na(aic) %>%
+  pivot_wider(names_from = model_version, values_from = aic)
+
+lapply(rodent_models_summary, function(x) {
+  
+  y = x
+  
+  lapply(y, function(y) {
+    
+    a = y
+    
+    
+  })
+  
+})
 
 # Odds ratios for model ----------------------------------------------
 # What is the probability of a tie forming between nodes
 # i.e. what is the probability of contact between two individual rodents in a given landuse setting
 
-homophily_term <- rodent_models_summary$homophily
+homophily_term <- final_model_summary
 
 coefficients <- list()
 
@@ -118,32 +170,34 @@ edges_vil <- coefficients_df %>%
   rma(yi = Estimate, sei = `Std. Error`, data = .)
 
 edges_rma_df <- bind_rows(tibble(ES = edges_ag$yi, SE = sqrt(edges_ag$vi), Type = "Network",
-                                 Weight = weights(edges_ag)/10,
+                                 Weight = weights(edges_ag),
                                  Network = factor(edges_ag$data$Network),
                                  N = edges_ag$data$`Observed M. natalensis`),
                           tibble(ES = edges_ag$b[, 1], SE = edges_ag$se, Type = "Summary",
-                                 Weight = 10,
+                                 Weight = 100,
                                  Network = factor("Summary - Agriculture"),
                                  N = as.numeric(NA)),
                           tibble(ES = edges_vil$yi, SE = sqrt(edges_vil$vi), Type = "Network",
-                                 Weight = weights(edges_vil)/10,
+                                 Weight = weights(edges_vil),
                                  Network = factor(edges_vil$data$Network),
                                  N = edges_vil$data$`Observed M. natalensis`),
                           tibble(ES = edges_vil$b[, 1], SE = edges_vil$se, Type = "Summary",
-                                 Weight = 10,
+                                 Weight = 100,
                                  Network = factor("Summary - Village"),
                                  N = as.numeric(NA)))
 
 edges_stratified <- ggplot(edges_rma_df) +
-  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), shape = Type, colour = N, size = Weight)) +
-  scale_size(range = c(0.1, 1)) +
+  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), shape = Type, colour = Weight, size = Weight)) +
+  scale_size(range = c(0.3, 1)) +
+  scale_colour_viridis_c(direction = -1, breaks = scales::breaks_pretty()) +
+  scale_shape_manual(values = c(16, 9)) +
   geom_vline(aes(xintercept = 1), lty = 2, linewidth = 1) +
   theme_bw() +
+  guides(size = "none") +
   labs(x = "Odds Ratio",
        y = element_blank(),
-       colour = "N - M. natalensis",
-       title = "Odds of a tie being observed (all species)",
-       subtitle = "Networks are limited to those containing more than 1 M. natalensis")
+       colour = "Weight",
+       title = "Odds of a tie being observed (all species)")
 
 
 # Meta-analysis of ties based on species type -----------------------------
@@ -162,8 +216,7 @@ species_combined <- ggplot(species_rma) +
   labs(x = "Odds Ratio",
        y = "Network number",
        colour = "N - M. natalensis",
-       title = "Odds of a tie being observed for M. natalensis",
-       subtitle = "Networks are limited to those containing more than 1 M. natalensis")
+       title = "Odds of a tie being observed for M. natalensis")
 
 species_ag <- coefficients_df %>%
   filter(str_detect(Coefficient, "Species") & Landuse == "Agriculture") %>%
@@ -174,25 +227,28 @@ species_vil <- coefficients_df %>%
   rma(yi = Estimate, sei = `Std. Error`, data = .)
 
 species_rma_df <- bind_rows(tibble(ES = species_ag$yi, SE = sqrt(species_ag$vi), Type = "Network",
-                                   Weight = weights(species_ag)/10,
+                                   Weight = weights(species_ag),
                                    Network = factor(species_ag$data$Network),
                                    N = species_ag$data$`Observed M. natalensis`),
-                            tibble(ES = species_ag$b[, 1], SE = species_ag$se, Type = "Summary", Weight = 10, Network = factor("Summary - Agriculture"), N = as.numeric(NA)),
+                            tibble(ES = species_ag$b[, 1], SE = species_ag$se, Type = "Summary", Weight = 100, Network = factor("Summary - Agriculture"), N = as.numeric(NA)),
                             tibble(ES = species_vil$yi, SE = sqrt(species_vil$vi), Type = "Network",
-                                   Weight = weights(species_vil)/10,
+                                   Weight = weights(species_vil),
                                    Network = factor(species_vil$data$Network), N = species_vil$data$`Observed M. natalensis`),
-                            tibble(ES = species_vil$b[, 1], SE = species_vil$se, Type = "Summary", Weight = 10, Network = factor("Summary - Village"), N = as.numeric(NA)))
+                            tibble(ES = species_vil$b[, 1], SE = species_vil$se, Type = "Summary", Weight = 100, Network = factor("Summary - Village"), N = as.numeric(NA)))
 
 species_stratified <- ggplot(species_rma_df) +
-  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), shape = Type, colour = N, size = Weight)) +
+  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), shape = Type, colour = Weight, size = Weight)) +
   geom_vline(aes(xintercept = 1), lty = 2, linewidth = 1) +
-  scale_size(range = c(0.1, 1)) +
+  scale_size(range = c(0.3, 1)) +
+  scale_colour_viridis_c(direction = -1, breaks = scales::pretty_breaks()) +
+  scale_shape_manual(values = c(16, 9)) +
   theme_bw() +
+  guides(size = "none") +
   labs(x = "Odds Ratio",
        y = element_blank(),
-       colour = "N - M. natalensis",
-       title = "Odds of a tie being observed for M. natalensis",
-       subtitle = "Networks are limited to those containing more than 1 M. natalensis")
+       colour = "Weight",
+       title = "Odds of a tie being observed for M. natalensis")
+
 
 
 # Meta-analysis of intra-specific ties ------------------------------------
@@ -230,32 +286,54 @@ match_vil <- coefficients_df %>%
   rma(yi = Estimate, sei = `Std. Error`, data = .)
 
 match_rma_df <- bind_rows(tibble(ES = match_ag$yi, SE = sqrt(match_ag$vi), Type = "Network", 
-                                 Weight = weights(match_ag)/10,
+                                 Weight = weights(match_ag),
                                  Network = factor(match_ag$data %>%
                                                     drop_na(Estimate) %>%
                                                     pull(Network)),
                                  N = match_ag$data %>%
                                    drop_na(Estimate) %>%
                                    pull(`Observed M. natalensis`)),
-                          tibble(ES = match_ag$b[, 1], SE = match_ag$se, Type = "Summary", Weight = 10, Network = factor("Summary - Agriculture"), N = as.numeric(NA)),
+                          tibble(ES = match_ag$b[, 1], SE = match_ag$se, Type = "Summary", Weight = 100, Network = factor("Summary - Agriculture"), N = as.numeric(NA)),
                           tibble(ES = match_vil$yi, SE = sqrt(match_vil$vi), Type = "Network",
-                                 Weight = weights(match_vil)/10,
+                                 Weight = weights(match_vil),
                                  Network = factor(match_vil$data %>%
                                                     drop_na(Estimate) %>%
                                                     pull(Network)),
                                  N = match_vil$data %>%
                                    drop_na(Estimate) %>%
                                    pull(`Observed M. natalensis`)),
-                          tibble(ES = match_vil$b[, 1], SE = match_vil$se, Type = "Summary", Weight = 10, Network = factor("Summary - Village"), N = as.numeric(NA)))
+                          tibble(ES = match_vil$b[, 1], SE = match_vil$se, Type = "Summary", Weight = 100, Network = factor("Summary - Village"), N = as.numeric(NA)))
 
 match_stratified <- ggplot(match_rma_df) +
-  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), shape = Type, colour = N, size = Weight)) +
+  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), shape = Type, colour = Weight, size = Weight)) +
   geom_vline(aes(xintercept = 1), lty = 2, linewidth = 1) +
-  scale_size(range = c(0.1, 1)) +
+  scale_size(range = c(0.3, 1)) +
+  scale_colour_viridis_c(direction = -1, breaks = scales::pretty_breaks()) +
+  scale_shape_manual(values = c(16, 9)) +
   theme_bw() +
   labs(x = "Odds Ratio",
        y = element_blank(),
-       colour = "N - M. natalensis",
-       title = "Odds of a tie between two M. natalensis being observed",
-       subtitle = "Networks are limited to those containing more than 1 M. natalensis") +
+       title = "Odds of a tie between two M. natalensis being observed") +
+  guides(size = "none") +
   coord_cartesian(xlim = c(0, 40))
+
+p1 <- edges_stratified + 
+  theme(legend.position = "none") +
+  labs(title = element_blank())
+p2 <- species_stratified +
+  theme(legend.position = "none") +
+  labs(title = element_blank())
+p3 <- match_stratified +
+  theme(legend.position = "none") +
+  labs(title = element_blank())
+legend <- get_legend(match_stratified)
+
+save_plot(plot = plot_grid(p1, p2, p3, legend, ncol = 2, labels = c("A", "B", "C", " ")), filename = here("output", "meta.png"), base_width = 10, base_height = 8)
+
+# Assessing GOF -----------------------------------------------------------
+
+models_in_rma <- c(9, 10, 11, 12, 13, 18, 20, 21, 22, 23, 24)
+
+gof_list <- final_model$final_model_gof[models_in_rma]
+
+plot(gof_list[[10]])

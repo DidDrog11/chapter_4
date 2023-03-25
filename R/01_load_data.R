@@ -17,5 +17,5 @@ write_rds(trap_data, here("input", "trap_data.rds"))
 
 # Use observed data, no ELISA ---------------------------------------------
 
-chapter_3_extract <- readRDS(gzcon(url("https://github.com/DidDrog11/chapter_3/raw/observed_data/data/data_for_export/chapter_4_extract.rds")))
+rodent_trapping_data <- readRDS(gzcon(url("https://github.com/DidDrog11/rodent_trapping/raw/main/data/data_for_export/combined_data.rds")))
 

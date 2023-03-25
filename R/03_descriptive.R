@@ -1,5 +1,6 @@
 # General descriptives
-unique_rodents <- read_rds(here("data", "unique_rodents.rds"))
+# to use when ELISA data finalised
+# unique_rodents <- read_rds(here("data", "unique_rodents.rds"))
 
 
 # Using chapter 3 extract -------------------------------------------------
@@ -10,7 +11,7 @@ trap_data <- read_rds(here("data", "chapter_4_traps.rds"))
 nrow(unique_rodents)
 
 # Number of trapnights
-nrow(trap_data) * 4
+nrow(trap_data)
 
 # Number of species
 unique_rodents %>%

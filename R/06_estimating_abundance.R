@@ -1,141 +1,123 @@
 source(here::here("R", "00_setup.R"))
-source(here("R", "01_load_data.R"))
-source(here("R", "02_clean_data.R"))
-source(here("R", "03_descriptive.R"))
 
-# Rodent species with less than 10 individuals will be grouped as Other
-species_n <- unique_rodents %>%
+set.seed(123)
+
+df <- read_rds(here("data", "data_for_abundance.rds"))
+
+rodents <- df$rodents
+
+trap_data <- df$trap_data
+
+network_numbers <- df$network_numbers
+
+# Rodent species with less than 20 individuals will be grouped as Other
+species_n <- rodents %>%
   group_by(species) %>%
   summarise(N = n())
 
-other_species <- species_n$species[species_n$N <= 50]
-
-rodents <- unique_rodents %>%
-  select(rodent_id, village, visit, trap_id, species) %>%
-  mutate(species = case_when(species %in% other_species ~ "other_spp",
-                             TRUE ~ species)) %>%
-  left_join(trap_data %>%
-              select(trap_id, site_id, landuse),
-            by = c("trap_id")) %>%
-  group_by(rodent_id) %>% 
-  arrange(site_id) %>%
-  slice(1) %>%
-  select(-trap_id)
-
-network_nodelist <- read_rds(here("temp", "network_nodelist.rds")) %>%
-  bind_rows(.id = "Network") %>%
-  select(Network, Village, Visit, Grid_number, Landuse) %>%
-  mutate(Network = as.numeric(Network)) %>%
-  distinct()
+other_species <- species_n$species[species_n$N < 20]
 
 sites <- trap_data %>%
-  distinct(site_id, trap_id, village, visit, grid_number, landuse) %>%
-  mutate(tn = 4) %>%
-  group_by(site_id, village, visit, grid_number, landuse) %>%
-  mutate(tn = sum(tn)) %>%
-  select(-trap_id) %>%
-  group_by(village, grid_number, landuse) %>%
-  mutate(site_number = cur_group_id()) %>%
-  ungroup() %>%
-  distinct(site_number, site_id, visit, tn) %>%
-  arrange(visit, site_number) %>%
-  pivot_wider(names_from = visit, names_prefix = "visit_", values_from = tn)
+  distinct(trap_uid, village, visit, grid, landuse) %>%
+  mutate(tn = 1) %>%
+  left_join(network_numbers, by = c("village" = "Village", "visit" = "Visit", "grid" = "Grid", "landuse" = "Landuse")) %>%
+  group_by(Network, visit, village, grid, landuse) %>%
+  summarise(tn = sum(tn)) %>%
+  drop_na(Network) %>%
+  distinct(Network, visit, village, grid, landuse, tn) %>%
+  left_join(visit_season %>%
+              mutate(visit = factor(visit))) %>%
+  arrange(Network, village, grid, visit) %>%
+  mutate(location = dt_case_when(str_detect(village, "lambayama") ~ "peri-urban",
+                                 TRUE ~ "rural")) %>%
+  group_by(village, grid) %>%
+  mutate(site_id = cur_group_id())
 
-site_numbers <- sites %>%
-  select(site_number, site_id)
+site_id <- sites %>%
+  distinct(village, grid, landuse, site_id)
 
 surveyed_site <- trap_data %>%
-  distinct(site_id, visit) %>%
-  left_join(site_numbers) %>%
-  select(site_number, visit) %>%
-  arrange(site_number, visit) %>%
-  distinct()
+  distinct(trap_uid, village, visit, grid, landuse) %>%
+  left_join(network_numbers, by = c("village" = "Village", "visit" = "Visit", "grid" = "Grid", "landuse" = "Landuse")) %>%
+  distinct(village, visit, grid, landuse, Network) %>%
+  arrange(visit, village, grid) 
 
 site_covs <- sites %>%
-  mutate(location = case_when(str_detect(site_id, "lambayama") ~ "peri-urban",
-                              TRUE ~ "rural")) %>%
-  left_join(trap_data %>%
-              select(site_id, landuse) %>%
-              distinct()) %>%
-  select(site_number, location, landuse) %>%
-  arrange(site_number) %>%
-  distinct() %>%
-  select(-site_number) %>%
-  as.data.frame()
+  select(-Network) %>%
+  arrange(site_id, visit, village) %>%
+  as.data.frame() 
 
-final_site_df <- site_numbers %>%
-  left_join(trap_data %>%
-              distinct(site_id, landuse, village, grid_number)) %>%
-  select(site_number, village, landuse, grid_number) %>%
-  arrange(site_number) %>%
-  distinct()
+obs_df <- sites %>%
+  group_by(site_id, visit, village) %>%
+  summarise(tn = sum(tn),
+            season = unique(season),
+            village = unique(village)) %>%
+  arrange(visit, site_id)
 
-obs_covs <- list(tn = sites %>%
-                   arrange(site_number) %>%
-                   select(-site_id) %>%
-                   group_by(site_number) %>%
-                   summarise(across(everything(), ~ sum(.x, na.rm = TRUE))) %>%
-                   arrange(site_number) %>%
-                   select(-site_number) %>%
-                   replace(., . == 0, NA) %>%
-                   as.matrix(),
-                 season = trap_data %>%
-                   left_join(visit_season, by = "visit") %>%
-                   distinct(site_id, visit, season) %>%
-                   left_join(site_numbers) %>%
-                   arrange(visit) %>%
-                   distinct(visit, season, site_number) %>%
-                   pivot_wider(names_from = visit, names_prefix = "visit_", values_from = season) %>%
+obs_covs <- list(tn = obs_df %>%
+                   select(-season) %>%
+                   pivot_wider(names_from = visit, names_prefix = "visit_", values_from = tn) %>%
+                   arrange(site_id) %>%
                    ungroup() %>%
-                   arrange(site_number) %>%
-                   select(-site_number) %>%
+                   select(-site_id, -village) %>%
+                   as.matrix(),
+                 season = obs_df %>%
+                   select(-tn) %>%
+                   pivot_wider(names_from = visit, names_prefix = "visit_", values_from = season) %>%
+                   arrange(site_id) %>%
+                   ungroup() %>%
+                   select(-site_id, -village) %>%
                    as.matrix())
 
 rodents_ab <- rodents %>%
-  left_join(site_numbers, by = "site_id") %>%
+  left_join(site_id, by = c("village", "grid", "landuse")) %>%
+  mutate(species = dt_case_when(species %in% other_species ~ "other_spp",
+                                TRUE ~ species)) %>%
   ungroup() %>%
   arrange(species) %>%
-  select(site_number, visit, species) %>%
+  select(site_id, visit, species) %>%
   group_by(species) %>%
   group_split()
 
-names(rodents_ab) <- unique(sort(rodents$species))
+names(rodents_ab) <- bind_rows(rodents_ab) %>%
+  arrange(species) %>%
+  distinct(species) %>%
+  pull(species)
 
 rodents_ab_binary <- lapply(rodents_ab, function(x) {
   
-  left_join(surveyed_site, x) %>%
+  left_join(site_covs, x) %>%
     mutate(species = case_when(is.na(species) ~ 0,
                                TRUE ~ 1)) %>%
-    group_by(site_number, visit) %>%
+    group_by(site_id, visit) %>%
     mutate(n = sum(species)) %>%
     arrange(visit) %>%
-    distinct(site_number, visit, n) %>%
+    distinct(site_id, visit, n) %>%
     pivot_wider(names_from = visit, names_prefix = "visit_", values_from = n) %>%
-    arrange(site_number)
+    arrange(site_id)
   
 })
 
 names(rodents_ab_binary) <- names(rodents_ab)
 
-# Create a table to manage the K input into the N-mixture model
-k_table = tibble(species = names(rodents_ab),
-                 poisson_k = rep(40, 6),
-                 nb_k = rep(40, 6),
-                 zip_k = rep(40, 6))
-
 # Abundance function ------------------------------------------------------
-produce_abundance <- function(binary_list = rodents_ab_binary, species_name = "crocidura_spp") {
+produce_abundance <- function(binary_list = rodents_ab_binary, species_name = "crocidura_spp", site_covs_df = site_covs, obs_covs_df = obs_covs, k = k) {
   
   ab <- binary_list[[species_name]] %>%
     ungroup() %>%
-    select(-site_number) %>%
+    select(-site_id) %>%
     as.matrix()
   
-  umf <- unmarkedFramePCount(y = ab, siteCovs = site_covs, obsCovs = obs_covs)
+  site_covs_summarise = site_covs_df %>%
+    distinct(site_id, location, landuse) %>%
+    select(-site_id) %>%
+    as.data.frame()
   
-  ab_p <- pcount(formula = ~ tn + season ~ location + landuse, umf, mixture = "P", K = k_table$poisson_k[k_table$species == species_name])
-  ab_nb <- pcount(formula = ~ tn + season ~ location + landuse, umf, mixture = "NB", K = k_table$nb_k[k_table$species == species_name])
-  ab_zip <- pcount(formula = ~ tn + season ~ location + landuse, umf, mixture = "ZIP", K = k_table$zip_k[k_table$species == species_name])
+  umf <- unmarkedFramePCount(y = ab, siteCovs = site_covs_summarise, obsCovs = obs_covs_df)
+  
+  ab_p <- pcount(formula = ~ tn + season ~ location + landuse, umf, mixture = "P", K = k)
+  ab_nb <- pcount(formula = ~ tn + season ~ location + landuse, umf, mixture = "NB", K = k)
+  ab_zip <- pcount(formula = ~ tn + season ~ location + landuse, umf, mixture = "ZIP", K = k)
   
   ab_list <- list("poisson" = ab_p,
                   "neg_binomial" = ab_nb,
@@ -151,6 +133,15 @@ produce_abundance <- function(binary_list = rodents_ab_binary, species_name = "c
   
   # Estimate the posterior distributions of the random variables
   ab_ranef <- ranef(ab_selected)
+  ppd <- posteriorSamples(ab_ranef, nsims = 1000)
+  
+  median_ab <- vector()
+  
+  for(i in 1:dim(ppd@samples)[1]) {
+  
+    median_ab[i] <- median(ppd@samples[i, ,])
+    
+  }
   
   observed_n <- sum(ab, na.rm = TRUE)
   estimated_n <- sum(bup(ab_ranef))
@@ -158,16 +149,20 @@ produce_abundance <- function(binary_list = rodents_ab_binary, species_name = "c
   ab_df <- show(ab_ranef) %>%
     as.data.frame() %>%
     mutate(species = species_name,
-           site_number = row_number()) %>%
-    relocate(site_number, species) %>%
-    left_join(final_site_df) %>%
-    select(site_number, grid_number, village, landuse, Mean, Mode) %>%
+           site_id = row_number()) %>%
+    relocate(site_id, species) %>%
+    left_join(site_id) %>%
+    mutate(Median = median_ab) %>%
+    select(site_id, grid, village, landuse, Mean, Mode, Median) %>%
     mutate(observed = rowSums(binary_list[[species_name]] %>%
                                 ungroup() %>%
-                                select(-site_number), na.rm = TRUE)) %>%
+                                select(-site_id), na.rm = TRUE)) %>%
   tibble()
   
-  colnames(ab_df) <- c(colnames(ab_df[1:4]), paste0(species_name, "_", "mean"), paste0(species_name, "_", "mode"), paste0(species_name, "_", "observed"))
+  colnames(ab_df) <- c(colnames(ab_df[1:4]), paste0(species_name, "_", "mean"),
+                       paste0(species_name, "_", "mode"),
+                       paste0(species_name, "_", "median"),
+                       paste0(species_name, "_", "observed"))
   
   return(list(model_selected = lowest_aic,
               model = ab_selected,
@@ -177,28 +172,102 @@ produce_abundance <- function(binary_list = rodents_ab_binary, species_name = "c
   
 }
 
-crocidura <- produce_abundance(species_name = "crocidura_spp")
-mastomys_natalensis <- produce_abundance(species_name = "mastomys_natalensis")
-mus_musculus <- produce_abundance(species_name = "mus_musculus")
-other_spp <- produce_abundance(species_name = "other_spp")
-praomys_spp <- produce_abundance(species_name = "praomys_spp")
-rattus_rattus <- produce_abundance(species_name = "rattus_rattus")
+crocidura <- produce_abundance(species_name = "crocidura_spp", k = 60)
+lophuromys <- produce_abundance(species_name = "lophuromys_sikapusi", k = 60)
+mastomys_natalensis <- produce_abundance(species_name = "mastomys_natalensis", k = 80)
+mus_musculus <- produce_abundance(species_name = "mus_musculus", k = 120)
+mus_setulosus <- produce_abundance(species_name = "mus_setulosus", k = 50)
+other_spp <- produce_abundance(species_name = "other_spp", k = 60)
+praomys_spp <- produce_abundance(species_name = "praomys_rostratus", k = 120)
+rattus_rattus <- produce_abundance(species_name = "rattus_rattus", k = 60)
 
-combined_abundance <- left_join(crocidura$output, mastomys_natalensis$output, by = c("site_number", "grid_number", "village", "landuse")) %>%
-  left_join(mus_musculus$output, by = c("site_number", "grid_number", "village", "landuse")) %>%
-  left_join(other_spp$output, by = c("site_number", "grid_number", "village", "landuse")) %>%
-  left_join(praomys_spp$output, by = c("site_number", "grid_number", "village", "landuse")) %>%
-  left_join(rattus_rattus$output, by = c("site_number", "grid_number", "village", "landuse")) %>%
-  select(-matches("_mean|_observed"))
+combined_abundance <- left_join(crocidura$output, mastomys_natalensis$output, by = c("site_id", "grid", "village", "landuse")) %>%
+  left_join(lophuromys$output, by = c("site_id", "grid", "village", "landuse")) %>%
+  left_join(mus_musculus$output, by = c("site_id", "grid", "village", "landuse")) %>%
+  left_join(mus_setulosus$output, by = c("site_id", "grid", "village", "landuse")) %>%
+  left_join(other_spp$output, by = c("site_id", "grid", "village", "landuse")) %>%
+  left_join(praomys_spp$output, by = c("site_id", "grid", "village", "landuse")) %>%
+  left_join(rattus_rattus$output, by = c("site_id", "grid", "village", "landuse")) %>%
+  select(-matches("_mean|_mode|_observed")) %>%
+  mutate(across(.cols = matches("_median"), \(x) round(x, digits = 0)))
 
 estimated_population <- network_nodelist %>%
   left_join(combined_abundance %>%
-              mutate(Grid_number = grid_number,
+              mutate(Grid = grid,
                      Village = str_to_sentence(village),
                      Landuse = str_to_sentence(landuse)) %>%
-              select(-site_number, -grid_number, -village, -landuse)) %>%
+              select(-site_id, -grid, -village, -landuse)) %>%
   group_by(Network, Visit, Village) %>% 
-  summarise(across(.cols = matches("_mode"), sum))
+  summarise(across(.cols = matches("_median"), \(x) sum(x, na.rm = FALSE)))
+
+plot_abundance <- function(species, fig_label = "A", label_y_position = 250, label_x_shift = 5) {
+  
+  ppd <- posteriorSamples(ranef(species$model), nsims = 1000)
+  
+  site_landuse_number <- site_covs %>%
+    distinct(site_id, landuse)
+  
+  site_village_number <- site_id %>% 
+    ungroup() %>%
+    select(village, site_id) %>% 
+    distinct()
+  
+  site_label <- site_landuse_number %>%
+    left_join(site_village_number, by = c("site_id")) %>%
+    mutate(label = str_to_title(paste0(site_id, "-", village, ": ", landuse)),
+           landuse = str_to_title(landuse)) %>%
+    select(site_id, label, landuse)
+  
+  sample_list <- list()
+  
+  for(i in 1:dim(ppd@samples)[1]) {
+    
+    s <- ppd@samples[i, , ]
+    
+    sample_list[[i]] <- tibble(abundance = s) %>%
+      bind_cols(site_label[i, ])
+    
+  }
+  
+  sample_df <- sample_list %>%
+    bind_rows() %>%
+    arrange(site_id) %>%
+    mutate(site_id = factor(site_id, labels = unique(label)))
+  
+  median_df <- sample_df %>%
+    group_by(site_id) %>%
+    mutate(median_abundance = round(median(abundance), 0)) %>%
+    distinct(site_id, median_abundance)
+  
+  species_name = str_to_sentence(str_replace(str_remove_all(names(species$output)[str_detect(names(species$output), "_median")], "_median"), "_", " "))
+  
+  species_plot <- ggplot() +
+    geom_bar(data = sample_df, aes(x = abundance, fill = landuse)) +
+    geom_vline(data = median_df, aes(xintercept = median_abundance), linetype = "dashed") +
+    geom_text(data = median_df, aes(x = median_abundance + label_x_shift, label = median_abundance), y = label_y_position, size = 4) +
+    facet_wrap(~ site_id) +
+    theme_bw() +
+    scale_fill_manual(values = landuse_palette) +
+    labs(title = paste0("S2", fig_label, ") ", species_name, " estimated abundance"),
+         x = "Estimated abundance",
+         y = "Posterior samples",
+         fill = "Landuse")
+  
+  plot_name <- paste0("Supplementary_Figure_2", fig_label, ".png")
+  
+  save_plot(here("output", plot_name), plot = species_plot, base_height = 8)
+  
+}
+
+
+plot_abundance(species = mastomys_natalensis, fig_label = "A", label_y_position = 250, label_x_shift = 5)
+plot_abundance(species = mus_musculus, fig_label = "B", label_y_position = 400, label_x_shift = 5)
+plot_abundance(species = rattus_rattus, fig_label = "C", label_y_position = 250, label_x_shift = 5)
+plot_abundance(species = crocidura, fig_label = "D", label_y_position = 100, label_x_shift = 5)
+plot_abundance(species = lophuromys, fig_label = "E", label_y_position = 100, label_x_shift = 5)
+plot_abundance(species = mus_setulosus, fig_label = "F", label_y_position = 100, label_x_shift = 5)
+plot_abundance(species = praomys_spp, fig_label = "G", label_y_position = 250, label_x_shift = 5)
+plot_abundance(species = other_spp, fig_label = "H", label_y_position = 250, label_x_shift = 5)
 
 write_rds(estimated_population, here("data", "estimated_population.rds"))
 
