@@ -1,24 +1,20 @@
 source(here::here("R", "00_setup.R"))
 source(here("R", "01_load_data.R"))
-source(here("R", "02_clean_data.R"))
+#source(here("R", "02_clean_data.R"))
 source(here("R", "03_descriptive.R"))
 
 # Load in the rodent data
 rodents <- unique_rodents %>%
-  drop_na(species) %>%
-  drop_na(grid_number) %>%
-  left_join(trap_data %>%
-              select(trap_uid, village, visit, grid, landuse, lon, lat), by = c("trap_uid")) %>%
-  select(rodent_uid, species, village, visit, grid, trap_uid, landuse, lon, lat)
+  left_join(trap_data) %>%
+  rename(grid = grid_number)
 
 landuse_visit_rodents <- rodents %>%
-  st_as_sf(coords = c("lon", "lat"), crs = default_CRS) %>%
-  st_transform(crs = SL_UTM) %>%
+  st_as_sf(coords = c("trap_easting", "trap_northing"), crs = SL_UTM) %>%
   group_by(landuse, visit) %>%
   group_split()
   
 network_numbers <- trap_data %>%
-  distinct(village, grid, visit, landuse) %>%
+  distinct(village, grid = grid_number, visit, landuse) %>%
   left_join(landuse_visit_rodents %>%
               bind_rows(.id = "Site") %>%
               mutate(Site = as.numeric(Site)) %>%
@@ -37,23 +33,30 @@ network_numbers <- trap_data %>%
 
 species_n <- tibble(bind_rows(landuse_visit_rodents)) %>%
   group_by(species) %>%
-  summarise(N = n()) %>%
-  mutate(species = str_to_sentence(str_replace_all(species, "_", " ")))
+  summarise(N = n())
+
+included_species <- species_n %>%
+  filter(N >= 10) %>%
+  arrange(-N) %>%
+  pull(species) %>%
+  droplevels()
 
 # Label rare species <10 as other
 other_species <- species_n %>%
-  filter(N < 20) %>%
-  pull(species)
+  filter(N < 10) %>%
+  pull(species) %>%
+  droplevels()
 
 prepared_data <- list(rodents = rodents,
-                      trap_data = trap_data,
+                      trap_data = trap_data %>%
+                        rename(grid = grid_number),
                       network_numbers = network_numbers)
 
 write_rds(prepared_data, here("data", "data_for_abundance.rds"))
 
-if(file.exists(here("data", "expanded_assemblages_2023-03-22.rds"))) {
+if(file.exists(here("data", "expanded_assemblages_2023-06-13.rds"))) {
   
-  expanded_assemblages <- read_rds(here("data", "expanded_assemblages_2023-03-22.rds"))
+  expanded_assemblages <- read_rds(here("data", "expanded_assemblages_2023-06-13.rds"))
   
 } else {
   
@@ -124,14 +127,21 @@ if(file.exists(here("data", "expanded_assemblages_2023-03-22.rds"))) {
       group_by(assemblage) %>%
       mutate(assemblage = as.numeric(assemblage))
     
+    if(nrow(combined_assemblages) == 1) {
+      
+      nodes = combined_assemblages$from_id
+      
+    } else {
     # Nodes
     nodes = unique(c(combined_assemblages$from_id,
                      combined_assemblages %>%
                        drop_na(to_id) %>%
                        pull(to_id)))
+    }
     
     vertices <- tibble(node = nodes) %>%
       left_join(tibble(bind_rows(rodent_data)) %>%
+                  mutate(rodent_uid = as.character(rodent_uid)) %>%
                   select(rodent_uid,
                          species,
                          village,
@@ -139,10 +149,7 @@ if(file.exists(here("data", "expanded_assemblages_2023-03-22.rds"))) {
                          grid,
                          landuse),
                 by = c("node" = "rodent_uid")) %>%
-      mutate(Species = str_to_sentence(str_replace_all(species, "_", " ")),
-             Landuse = str_to_sentence(landuse),
-             Village = str_to_sentence(village)) %>%
-      select(node, Species, Village, Visit = visit, Grid = grid, Landuse)
+      select(node, Species = species, Village = village, Visit = visit, Grid = grid, Landuse = landuse)
     
     # Edgelist
     edgelist <- combined_assemblages %>%
@@ -170,8 +177,8 @@ if(file.exists(here("data", "expanded_assemblages_2023-03-22.rds"))) {
   
   for(i in 1:length(assemblages)) {
     # Species grouping
-    vertex_attr(assemblages[[i]]$graph, name = "Species", index = V(assemblages[[i]]$graph)$Species %in% str_to_sentence(str_replace_all(other_species, "_", " "))) <- "Other"
-    vertex_attr(assemblages[[i]]$full_graph, name = "Species", index = V(assemblages[[i]]$full_graph)$Species %in% str_to_sentence(str_replace_all(other_species, "_", " "))) <- "Other"
+    vertex_attr(assemblages[[i]]$graph, name = "Species", index = V(assemblages[[i]]$graph)$Species %in% other_species) <- "Other"
+    vertex_attr(assemblages[[i]]$full_graph, name = "Species", index = V(assemblages[[i]]$full_graph)$Species %in% other_species) <- "Other"
     
     # Distance of contact definition
     vertex_attr(assemblages[[i]]$graph, name = "Contact radius") <- "30m" # set to the distance used in producing the network
@@ -181,7 +188,7 @@ if(file.exists(here("data", "expanded_assemblages_2023-03-22.rds"))) {
     vertex_attr(assemblages[[i]]$graph, name = "Village locations", index = V(assemblages[[i]]$graph)$"Village" != "Lambayama") <- "Rural"
     
     # Season classification as wet or dry
-    vertex_attr(assemblages[[i]]$graph, name = "Season", index = V(assemblages[[i]]$graph)$"Visit" %in% c("1", "2", "5", "6")) <- "Dry"
+    vertex_attr(assemblages[[i]]$graph, name = "Season", index = V(assemblages[[i]]$graph)$"Visit" %in% c("1", "2", "5", "6", "9", "10")) <- "Dry"
     vertex_attr(assemblages[[i]]$graph, name = "Season", index = V(assemblages[[i]]$graph)$"Visit" %in% c("3", "4", "7", "8")) <- "Wet"
     
   }
@@ -216,7 +223,8 @@ if(file.exists(here("data", "expanded_assemblages_2023-03-22.rds"))) {
   
   formatted_abundance <- estimated_abundance %>%
     pivot_longer(cols = contains("_median"), names_to = "Species", values_to = "Estimated") %>%
-    mutate(Species = str_to_sentence(str_replace(str_remove_all(Species, "_median"), "_", " ")))
+    mutate(Species = str_to_sentence(str_replace(str_remove_all(Species, "_median"), "_", " ")),
+           Species = fct(Species, levels = c(levels(included_species), "Other")))
   
   expanded_assemblages <- list()
   expanded_assemblages$nodelist <- list()
@@ -227,14 +235,13 @@ if(file.exists(here("data", "expanded_assemblages_2023-03-22.rds"))) {
       mutate(Observed = TRUE,
              Network = i) %>%
       group_by(Species, Village) %>%
-      summarise(Observed = n(), .groups = "drop") %>%
-      mutate(Species = dt_case_when(Species %in% str_to_sentence(str_replace_all(other_species, "_", " ")) ~ "Other spp",
-                                    TRUE ~ Species))
+      summarise(Observed = n(), .groups = "drop")
     
     nodelist <- formatted_abundance %>%
       filter(Network == i) %>%
       left_join(n_observed, by = c("Village", "Species")) %>%
       mutate(Estimated = case_when(!is.na(Observed) ~ Estimated - Observed,
+                                   Estimated - Observed < 0 ~ 0,
                                    TRUE ~ Estimated)) %>%
       select(-Observed) %>%
       uncount(Estimated) %>%
@@ -305,17 +312,17 @@ if(file.exists(here("data", "expanded_assemblages_2023-03-22.rds"))) {
     
     if(any(c(network.vertex.names(expanded_network)) == expanded_assemblages$nodelist[[i]]$node) == FALSE) warning("Node dataframe is not in the same order as the edgelist. Needs to be checked to ensure wrong vertex attributes aren't assigned.")
     
-    expanded_network%v%"Species" <- expanded_assemblages$nodelist[[i]]$Species
+    expanded_network%v%"Species" <- as.character(expanded_assemblages$nodelist[[i]]$Species)
     expanded_network%v%"Village" <- expanded_assemblages$nodelist[[i]]$Village
     expanded_network%v%"Visit" <- as.numeric(expanded_assemblages$nodelist[[i]]$Visit)
-    expanded_network%v%"Landuse" <- expanded_assemblages$nodelist[[i]]$Landuse
+    expanded_network%v%"Landuse" <- as.character(expanded_assemblages$nodelist[[i]]$Landuse)
     expanded_network%v%"Observed" <- expanded_assemblages$nodelist[[i]]$Observed
     
     expanded_assemblages$network[[i]] <- expanded_network
     
   }
   
-  write_rds(expanded_assemblages, here("data", "expanded_assemblages_2023-03-22.rds"))
+  write_rds(expanded_assemblages, here("data", "expanded_assemblages_2023-06-13.rds"))
   
 }
 
@@ -384,7 +391,7 @@ final_model <- list(final_model = rodent_models_summary$homophily,
 
 # Save models -------------------------------------------------------------
 dir.create(here("temp"))
-write_rds(rodent_network, here("temp", "rodent_networks_2023-03-23.rds"))
-write_rds(rodent_models, here("temp", "rodent_models_2023-03-23.rds"))
-write_rds(rodent_models_summary, here("temp", "rodent_models_summary_2023-03-23.rds"))
-write_rds(final_model, here("temp", "final_model_2023-03-23.rds"))
+write_rds(rodent_network, here("temp", "rodent_networks_2023-06-13.rds"))
+write_rds(rodent_models, here("temp", "rodent_models_2023-06-13.rds"))
+write_rds(rodent_models_summary, here("temp", "rodent_models_summary_2023-06-13.rds"))
+write_rds(final_model, here("temp", "final_model_2023-06-13.rds"))

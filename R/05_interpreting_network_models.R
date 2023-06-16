@@ -1,62 +1,63 @@
 source(here::here("R", "00_setup.R"))
 
-#rodent_models_summary <- read_rds(here("temp", "rodent_models_summary_2023-03-23.rds"))
-#rodent_network <- read_rds(here("temp", "rodent_networks_2023-03-23.rds"))
-rodent_data <- read_rds(here("data", "expanded_assemblages_2023-03-22.rds"))
+rodent_models_summary <- read_rds(here("temp", "rodent_models_summary_2023-06-13.rds"))
+rodent_network <- read_rds(here("temp", "rodent_networks_2023-06-13.rds"))
+rodent_data <- read_rds(here("data", "expanded_assemblages_2023-06-13.rds"))
 
-final_model <- read_rds(here("temp", "final_model_2023-03-23.rds"))
+final_model <- read_rds(here("temp", "final_model_2023-06-13.rds"))
 final_model_summary <- final_model$final_model
 `%s%` <- network::`%s%`
 
 # Model comparisons -------------------------------------------------------
-
-model_aic <- list()
-
-for(i in 1:length(rodent_models_summary)) {
-  
-  model_version <- rodent_models_summary[[i]]
-  
-  aic <- vector()
-  
-  for(n in 1:length(model_version)) {
-    
-    if(is.list(model_version[[n]])) {
-      
-      aic[n] = model_version[[n]]$aic
-      
-    } else {
-      
-      aic[n] = NA
-      
-    }
-    
-  }
-  
-  model_aic[[i]] <- tibble(network = 1:length(model_version),
-                           aic = aic,
-                           model_version = i)
-  
-  }
-
-compare_aic <- bind_rows(model_aic) %>%
-  mutate(model_version = case_when(model_version == 1 ~ "edge",
-                                   model_version == 2 ~ "edge + nodefactor",
-                                   model_version == 3 ~ "edge + nodefactor + nodematch")) %>%
-  drop_na(aic) %>%
-  pivot_wider(names_from = model_version, values_from = aic)
-
-lapply(rodent_models_summary, function(x) {
-  
-  y = x
-  
-  lapply(y, function(y) {
-    
-    a = y
-    
-    
-  })
-  
-})
+# No longer comparing AIC between different model types in this script
+# 
+# model_aic <- list()
+# 
+# for(i in 1:length(final_model_summary)) {
+#   
+#   model_version <- final_model_summary[[i]]
+#   
+#   aic <- vector()
+#   
+#   for(n in 1:length(model_version)) {
+#     
+#     if(is.list(model_version[[n]])) {
+#       
+#       aic[n] = model_version[[n]]$aic
+#       
+#     } else {
+#       
+#       aic[n] = NA
+#       
+#     }
+#     
+#   }
+#   
+#   model_aic[[i]] <- tibble(network = 1:length(model_version),
+#                            aic = aic,
+#                            model_version = i)
+#   
+#   }
+# 
+# compare_aic <- bind_rows(model_aic) %>%
+#   mutate(model_version = case_when(model_version == 1 ~ "edge",
+#                                    model_version == 2 ~ "edge + nodefactor",
+#                                    model_version == 3 ~ "edge + nodefactor + nodematch")) %>%
+#   drop_na(aic) %>%
+#   pivot_wider(names_from = model_version, values_from = aic)
+# 
+# lapply(rodent_models_summary, function(x) {
+#   
+#   y = x
+#   
+#   lapply(y, function(y) {
+#     
+#     a = y
+#     
+#     
+#   })
+#   
+# })
 
 # Odds ratios for model ----------------------------------------------
 # What is the probability of a tie forming between nodes
@@ -132,7 +133,16 @@ coefficients_df <- bind_rows(coefficients) %>%
   filter(`Observed M. natalensis` > 1) %>% 
   filter(!Network %in% Network[is.na(Estimate)])
 
+included_models <- bind_rows(coefficients) %>%
+  group_by(Network) %>% 
+  filter(!Network %in% Network[is.na(Estimate) | is.infinite(Estimate)]) %>%
+  distinct(Network)
+  
 
+# Speed up processing by removing networks
+rm(rodent_data)
+rm(final_model)
+gc()
 # Meta-analysis of edges --------------------------------------------------
 
 edges <- coefficients_df %>%
@@ -184,13 +194,13 @@ edges_rma_df <- bind_rows(tibble(ES = edges_ag$yi, SE = sqrt(edges_ag$vi), Type 
                           tibble(ES = edges_vil$b[, 1], SE = edges_vil$se, Type = "Summary",
                                  Weight = 100,
                                  Network = factor("Summary - Village"),
-                                 N = as.numeric(NA)))
+                                 N = as.numeric(NA))) %>%
+  mutate(Network = fct_inorder(Network))
 
 edges_stratified <- ggplot(edges_rma_df) +
-  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), shape = Type, colour = Weight, size = Weight)) +
-  scale_size(range = c(0.3, 1)) +
+  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), colour = Weight, size = Weight)) +
+  scale_size(range = c(0.2, 0.5)) +
   scale_colour_viridis_c(direction = -1, breaks = scales::breaks_pretty()) +
-  scale_shape_manual(values = c(16, 9)) +
   geom_vline(aes(xintercept = 1), lty = 2, linewidth = 1) +
   theme_bw() +
   guides(size = "none") +
@@ -234,22 +244,20 @@ species_rma_df <- bind_rows(tibble(ES = species_ag$yi, SE = sqrt(species_ag$vi),
                             tibble(ES = species_vil$yi, SE = sqrt(species_vil$vi), Type = "Network",
                                    Weight = weights(species_vil),
                                    Network = factor(species_vil$data$Network), N = species_vil$data$`Observed M. natalensis`),
-                            tibble(ES = species_vil$b[, 1], SE = species_vil$se, Type = "Summary", Weight = 100, Network = factor("Summary - Village"), N = as.numeric(NA)))
+                            tibble(ES = species_vil$b[, 1], SE = species_vil$se, Type = "Summary", Weight = 100, Network = factor("Summary - Village"), N = as.numeric(NA))) %>%
+  mutate(Network = fct_inorder(Network))
 
 species_stratified <- ggplot(species_rma_df) +
-  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), shape = Type, colour = Weight, size = Weight)) +
+  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), colour = Weight, size = Weight)) +
   geom_vline(aes(xintercept = 1), lty = 2, linewidth = 1) +
-  scale_size(range = c(0.3, 1)) +
+  scale_size(range = c(0.2, 0.5)) +
   scale_colour_viridis_c(direction = -1, breaks = scales::pretty_breaks()) +
-  scale_shape_manual(values = c(16, 9)) +
   theme_bw() +
   guides(size = "none") +
   labs(x = "Odds Ratio",
        y = element_blank(),
        colour = "Weight",
        title = "Odds of a tie being observed for M. natalensis")
-
-
 
 # Meta-analysis of intra-specific ties ------------------------------------
 
@@ -302,14 +310,14 @@ match_rma_df <- bind_rows(tibble(ES = match_ag$yi, SE = sqrt(match_ag$vi), Type 
                                  N = match_vil$data %>%
                                    drop_na(Estimate) %>%
                                    pull(`Observed M. natalensis`)),
-                          tibble(ES = match_vil$b[, 1], SE = match_vil$se, Type = "Summary", Weight = 100, Network = factor("Summary - Village"), N = as.numeric(NA)))
+                          tibble(ES = match_vil$b[, 1], SE = match_vil$se, Type = "Summary", Weight = 100, Network = factor("Summary - Village"), N = as.numeric(NA))) %>%
+  mutate(Network = fct_inorder(Network))
 
 match_stratified <- ggplot(match_rma_df) +
-  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), shape = Type, colour = Weight, size = Weight)) +
+  geom_pointrange(aes(y = fct_rev(Network), x = exp(ES), xmin = exp(ES - (1.96 * SE)), xmax = exp(ES + (1.96 * SE)), colour = Weight, size = Weight)) +
   geom_vline(aes(xintercept = 1), lty = 2, linewidth = 1) +
-  scale_size(range = c(0.3, 1)) +
+  scale_size(range = c(0.2, 0.5)) +
   scale_colour_viridis_c(direction = -1, breaks = scales::pretty_breaks()) +
-  scale_shape_manual(values = c(16, 9)) +
   theme_bw() +
   labs(x = "Odds Ratio",
        y = element_blank(),
@@ -326,14 +334,16 @@ p2 <- species_stratified +
 p3 <- match_stratified +
   theme(legend.position = "none") +
   labs(title = element_blank())
-legend <- get_legend(match_stratified)
+legend <- get_legend(match_stratified +
+                       theme(legend.position = "bottom"))
 
-save_plot(plot = plot_grid(p1, p2, p3, legend, ncol = 2, labels = c("A", "B", "C", " ")), filename = here("output", "meta.png"), base_width = 10, base_height = 8)
+save_plot(plot = plot_grid(p1, p2, p3, legend, ncol = 1, labels = c("A", "B", "C", " "), rel_heights = c(1, 1, 1, 0.2)), filename = here("output", "Figure_4.png"), base_width = 7, base_height = 11)
 
 # Assessing GOF -----------------------------------------------------------
+# If assessing GOF need to comment out the removal of final_model on line 138
 
-models_in_rma <- c(9, 10, 11, 12, 13, 18, 20, 21, 22, 23, 24)
+models_in_rma <- c(included_models$Network)
 
 gof_list <- final_model$final_model_gof[models_in_rma]
 
-plot(gof_list[[10]])
+plot(gof_list[[1]])

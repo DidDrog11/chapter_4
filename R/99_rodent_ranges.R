@@ -10,17 +10,18 @@ rodent_species <- unique_rodents %>%
   pull(species)
 
 rodent_genera <- unique_rodents %>%
-  filter(str_detect(species, "spp")) %>%
   distinct(species) %>%
-  mutate(genus = str_to_sentence(str_remove_all(species, "_spp"))) %>%
+  filter(!species %in% c("rattus_rattus", "mus_musculus", "mus_setulosus", "lemniscomys_striatus", "mastomys_natalensis")) %>%
+  mutate(genus = str_to_sentence(str_split(species, "_", simplify = TRUE)[, 1])) %>%
   pull(genus)
 
 # Load HomeRange data
 HomeRangeData <- GetHomeRangeData()
 
 rodent_ranges <- HomeRangeData %>%
+  mutate(genus = str_split(Species, " ", simplify = TRUE)[, 1]) %>%
   mutate(match = case_when(str_detect(Species, paste(rodent_species, collapse = "|")) ~ "Species",
-                           str_detect(Species, paste(rodent_genera, collapse = "|")) ~ "Genus",
+                           genus %in% rodent_genera ~ "Genus",
                            TRUE ~ as.character(NA))) %>%
   filter(!is.na(match)) %>%
   select(Species, Home_Range_km2, HR_Spread_km2, Spread_Units, No_Individuals, Latitude, Longitude, Country, match) %>%
@@ -33,7 +34,7 @@ rodent_ranges <- HomeRangeData %>%
 n_species_hr <- rodent_ranges %>%
   filter(match == "Species") %>%
   distinct(Species)
-# 3 species have home ranges, only one of these include data from Africa, for this species all data is originated from Tanzania
+# 4 species have home ranges, only two of these include data from Africa, for m natalensis all data is originated from Tanzania
 
 s_1 <- rodent_ranges %>%
   ggplot() +

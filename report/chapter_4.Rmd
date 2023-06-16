@@ -37,6 +37,24 @@ Richard Kock
 Deborah Watson-Jones
 Kate Jones
 
+
+David Simons ^1,2,3^, Rory Gibb ^2^, Umaru Bangura ^4,5^, Dianah Sondufu ^5^, Joyce Lamin ^5^, James Koninga ^6^, Momoh Jimmy ^6^, Mike Dawson ^5^, Joseph Lahai ^5^, Rashid Ansumana ^5^, Deborah Watson-Jones ^3,7^, Richard Kock ^1^, Kate E. Jones ^2^.
+
+^1^ Centre for Emerging, Endemic and Exotic Diseases, The Royal Veterinary College, London, United Kingdom
+
+^2^ Centre for Biodiversity and Environment Research, Department of Genetics, Evolution and Environment, University College London, London, United Kingdom
+
+^3^ Clinical Research Department, London School of Hygiene and Tropical Medicine, London, United Kingdom
+
+^4^ Bernard-Nocht Institute for Tropical Medicine
+
+^5^ Njala University, Bo, Sierra Leone
+
+^6^ Kenema Government Hospital, Kenema, Sierra Leone
+
+^7^ Mwanza Intervention Trials Unit, National Institute for Medical Research, Mwanza, Tanzania
+
+
 I'm unsure what to do with the team from Sierra Leone, they were included as co-authors on the prior chapter which uses much of the same data. Do I include them on this one too? Or because it is a "secondary analysis" of the same data do they not get included?
 
 # Research questions 
