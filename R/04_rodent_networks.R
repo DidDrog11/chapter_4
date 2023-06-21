@@ -54,9 +54,9 @@ prepared_data <- list(rodents = rodents,
 
 write_rds(prepared_data, here("data", "data_for_abundance.rds"))
 
-if(file.exists(here("data", "expanded_assemblages_2023-06-13.rds"))) {
+if(file.exists(here("data", "expanded_assemblages_2023-06-19.rds"))) {
   
-  expanded_assemblages <- read_rds(here("data", "expanded_assemblages_2023-06-13.rds"))
+  expanded_assemblages <- read_rds(here("data", "expanded_assemblages_2023-06-19.rds"))
   
 } else {
   
@@ -90,15 +90,15 @@ if(file.exists(here("data", "expanded_assemblages_2023-06-13.rds"))) {
       reference_id <- unique(y$rodent_uid)
       
       # Join the reference rodent to others that were detected in their range
-      contact <- st_filter(bind_rows(rodent_data) %>%
+      contact <- st_join(y %>%
+                             select(rodent_uid, geometry),
+                           bind_rows(individual_buffers) %>%
                              filter(!rodent_uid %in% reference_id &
                                       village %in% reference_village &
                                       visit %in% reference_visit) %>%
                              rename(to_id = rodent_uid,
                                     to_species = species), 
-                           y %>%
-                             select(rodent_uid, geometry),
-                           .predicate = st_within) %>%
+                           .predicate = st_overlaps) %>%
         mutate(from_id = reference_id,
                from_species = reference_species) %>%
         select(any_of(x = c("from_id", "from_species", "to_id", "to_species", "village", "visit", "grid")))
@@ -322,7 +322,7 @@ if(file.exists(here("data", "expanded_assemblages_2023-06-13.rds"))) {
     
   }
   
-  write_rds(expanded_assemblages, here("data", "expanded_assemblages_2023-06-13.rds"))
+  write_rds(expanded_assemblages, here("data", "expanded_assemblages_2023-06-19.rds"))
   
 }
 
@@ -391,7 +391,7 @@ final_model <- list(final_model = rodent_models_summary$homophily,
 
 # Save models -------------------------------------------------------------
 dir.create(here("temp"))
-write_rds(rodent_network, here("temp", "rodent_networks_2023-06-13.rds"))
-write_rds(rodent_models, here("temp", "rodent_models_2023-06-13.rds"))
-write_rds(rodent_models_summary, here("temp", "rodent_models_summary_2023-06-13.rds"))
-write_rds(final_model, here("temp", "final_model_2023-06-13.rds"))
+write_rds(rodent_network, here("temp", "rodent_networks_2023-06-19.rds"))
+write_rds(rodent_models, here("temp", "rodent_models_2023-06-19.rds"))
+write_rds(rodent_models_summary, here("temp", "rodent_models_summary_2023-06-19.rds"))
+write_rds(final_model, here("temp", "final_model_2023-06-19.rds"))

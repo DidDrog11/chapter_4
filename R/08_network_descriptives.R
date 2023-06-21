@@ -16,58 +16,58 @@ rodent_net_descriptives <- lapply(rodent_network, function(x) {
   observed_subgraph <- x %s% which(observed == TRUE)
   observed_igraph <- asIgraph(observed_subgraph)
   
-  descriptives <- tibble(nodes = network.size(x),
-                         observed_nodes = table(x%v%"Observed")["TRUE"],
-                         unobserved_nodes = table(x%v%"Observed")["FALSE"],
-                         non_missing_edges = network.edgecount(x),
-                         missing_edges = network.naedgecount(x),
-                         median_degree_observed = median(igraph::degree(observed_igraph, mode = "out")),
-                         lower_quartile = quantile(igraph::degree(observed_igraph, mode = "out"), probs = 0.25),
-                         upper_quartile = quantile(igraph::degree(observed_igraph, mode = "out"), probs = 0.75),
-                         IQR = IQR(igraph::degree(observed_igraph, mode = "out")),
-                         mean_degree = mean(igraph::degree(observed_igraph, mode = "out")),
-                         sd_degree = sd(igraph::degree(observed_igraph, mode = "out")),
-                         mean_betweenness = mean(estimate_betweenness(observed_igraph, cutoff = -1)),
-                         sd_betweenness = sd(estimate_betweenness(observed_igraph, cutoff = -1)),
-                         landuse = unique(x%v%"Landuse"),
-                         n_species = length(unique(x%v%"Species")),
-                         density = edge_density(observed_igraph),
-                         density_observed = network.density(x, na.omit = FALSE),
-                         visit = unique(x%v%"Visit"))
+  network_descriptives <- tibble(nodes = network.size(x),
+                                 observed_nodes = table(x%v%"Observed")["TRUE"],
+                                 unobserved_nodes = table(x%v%"Observed")["FALSE"],
+                                 non_missing_edges = network.edgecount(x),
+                                 missing_edges = network.naedgecount(x),
+                                 median_degree_observed = median(igraph::degree(observed_igraph, mode = "out")),
+                                 lower_quartile = quantile(igraph::degree(observed_igraph, mode = "out"), probs = 0.25),
+                                 upper_quartile = quantile(igraph::degree(observed_igraph, mode = "out"), probs = 0.75),
+                                 IQR = IQR(igraph::degree(observed_igraph, mode = "out")),
+                                 mean_degree = mean(igraph::degree(observed_igraph, mode = "out")),
+                                 sd_degree = sd(igraph::degree(observed_igraph, mode = "out")),
+                                 mean_betweenness = mean(estimate_betweenness(observed_igraph, cutoff = -1)),
+                                 sd_betweenness = sd(estimate_betweenness(observed_igraph, cutoff = -1)),
+                                 landuse = unique(x%v%"Landuse"),
+                                 n_species = length(unique(observed_subgraph%v%"Species")),
+                                 density = edge_density(observed_igraph),
+                                 density_observed = network.density(x, na.omit = FALSE),
+                                 visit = unique(x%v%"Visit"))
   
-}) %>%
+  node_level_descriptives <- tibble(rodent_uid = V(observed_igraph)$vertex.names,
+                                    species =  V(observed_igraph)$Species,
+                                    village = V(observed_igraph)$Village,
+                                    landuse = V(observed_igraph)$Landuse,
+                                    visit = V(observed_igraph)$Visit,
+                                    degree = igraph::degree(observed_igraph, mode = "out"),
+                                    betweenness = igraph::estimate_betweenness(observed_igraph, cutoff = -1))
+  
+  return(list(network_level = network_descriptives,
+              node_level = node_level_descriptives))
+  
+})
+
+network_level_descriptives <- lapply(rodent_net_descriptives, function(x) x$network_level) %>%
   bind_rows() %>%
   mutate(network_number = row_number()) %>%
   relocate(network_number, landuse, visit, n_species) %>%
   mutate(network_number = fct_inorder(as.character(network_number)),
          landuse = fct(landuse, levels = c("Forest", "Agriculture", "Village")))
 
-rodent_net_descriptives %>%
+network_level_descriptives %>%
   group_by(landuse) %>%
-  summarise(median_edges = median(non_missing_edges),
-            IQR_edges = IQR(non_missing_edges))
+  summarise(richness = max(n_species),
+            nodes = sum(observed_nodes),
+            edges = sum(non_missing_edges),
+            max_degree = max(mean_degree),
+            max_betweenness = max(mean_betweenness),
+            max_density = max(density_observed))
 
-landuse_level_degree <- lapply(rodent_network, function(x) {
-  
-  observed <- x%v%"Observed"
-  observed_subgraph <- x %s% which(observed == TRUE)
-  observed_igraph <- asIgraph(observed_subgraph)
-  
-  return(observed_igraph)
-  
-}) %>%
-  bind_graphs() %>%
-  mutate(degree = centrality_degree())
-
-landuse_level_degree %>%
-  group_by(Landuse) %>%
-  mutate(mean = mean(degree),
-         sd = sd(degree)) %>%
-  distinct(Landuse, mean, sd)
 
 # Network descriptive figures ---------------------------------------------
 
-network_node_plot <- rodent_net_descriptives %>%
+network_node_plot <- network_level_descriptives %>%
   select(network_number, landuse, visit, observed_nodes, unobserved_nodes) %>%
   pivot_longer(cols = c("observed_nodes", "unobserved_nodes"), names_to = "node", values_to = "n") %>%
   mutate(node = dt_case_when(str_detect(node, "unobserved") ~ "Not-observed",
@@ -84,34 +84,86 @@ network_node_plot <- rodent_net_descriptives %>%
        fill = element_blank(),
        alpha = element_blank())
 
-observed_edges_plot <- rodent_net_descriptives %>%
-  select(network_number, landuse, visit, non_missing_edges) %>%
-  mutate(network = fct_rev(fct_inorder(paste0(network_number, ": ", landuse, ", visit ", visit))),
-         network_number = fct_rev(network_number)) %>%
-  ggplot() +
-  geom_col(aes(y = network_number, x = non_missing_edges, fill = landuse)) +
+
+node_level_descriptives <- lapply(rodent_net_descriptives, function(x) x$node_level) %>%
+  bind_rows() %>%
+  left_join(network_numbers %>%
+              select(-Grid) %>%
+              rename("network_number" = Network) %>%
+              distinct(),
+            by = c("village" = "Village",
+                   "visit" = "Visit",
+                   "landuse" = "Landuse")) %>%
+  relocate(network_number, rodent_uid, species, village, landuse, visit, degree) %>%
+  mutate(network_number = fct_inorder(as.character(network_number)),
+         landuse = fct(landuse, levels = c("Forest", "Agriculture", "Village")))
+
+
+# Node level descriptives -------------------------------------------------
+
+
+node_level_descriptives %>% 
+  group_by(network_number, landuse, visit) %>%
+  summarise(max_degree = max(degree)) %>%
+  arrange(-max_degree)
+  
+node_level_descriptives %>% 
+  group_by(landuse) %>%
+  summarise(mean_degree = mean(degree)) %>%
+  arrange(-mean_degree)
+
+node_level_descriptives %>% 
+  group_by(landuse) %>%
+  summarise(mean_betweenness = mean(betweenness)) %>%
+  arrange(-mean_betweenness)
+
+node_level_descriptives %>% 
+  group_by(species, landuse) %>%
+  summarise(n = n(),
+            max_degree = max(degree),
+            mean_degree = mean(degree),
+            sd_degree = sd(degree, na.rm = TRUE),
+            median_degree = median(degree),
+            max_betweenness = max(betweenness),
+            mean_betweenness = mean(betweenness, na.rm = TRUE),
+            sd_betweenness = sd(betweenness),
+            median_betweenness = median(betweenness)) %>%
+  arrange(-max_degree)
+
+
+# Figure 2 ----------------------------------------------------------------
+
+figure_2_updated <- node_level_descriptives %>%
+  mutate(species = fct(species, levels = species_order_plots)) %>%
+  ungroup() %>%
+  ggplot(aes(x = species, y = degree, fill = landuse)) +
+  geom_boxplot(position = position_dodge(0.9, preserve = "total"), alpha = 1, outlier.shape = 21) +
+  coord_flip() +
   scale_fill_manual(values = landuse_palette) +
+  scale_colour_manual(values = landuse_palette) +
+  facet_wrap(~ species, scales = "free_y", ncol = 1) +
   theme_bw() +
-  theme() +
-  guides(fill = "none") +
-  labs(y = element_blank(),
-       x = "Observed edges (N)",
-       fill = element_blank())
+  theme(strip.background = element_blank(),
+        strip.text.x = element_blank()) +
+  labs(fill = "Land use",
+       colour = "Land use",
+       x = "Species",
+       y = "Degree")
 
-save_plot(plot = plot_grid(network_node_plot, observed_edges_plot, rel_widths = c(1, 0.5), labels = c("A", "B")),
-          filename = here("output", "Figure_1.png"), base_width = 10, base_height = 8)
-
+save_plot(plot = figure_2_updated, filename = here("output", "Figure_2_updated.png"), base_height = 9, base_width = 6)
 
 # Species interactions ----------------------------------------------------
 
-species_contact_graph <- lapply(rodent_network, function(x) {
+species_contact_graphs <- lapply(rodent_network, function(x) {
   
   observed <- x%v%"Observed"
   observed_subgraph <- x %s% which(observed == TRUE)
   observed_igraph <- asIgraph(observed_subgraph)
   observed_tblgraph <- as_tbl_graph(observed_igraph)
   
-}) %>%
+})
+
+species_contact_graph <- species_contact_graphs %>%
   bind_graphs()
 
 observed_individuals <- species_contact_graph %>%
@@ -120,9 +172,17 @@ observed_individuals <- species_contact_graph %>%
   rownames_to_column("rowid") %>%
   mutate(rowid = as.integer(rowid))
 
-observed_contacts <- species_contact_graph %>%
-  activate(edges) %>%
-  data.frame()
+observed_contacts <- bind_rows(species_contact_graph %>%
+                                 activate(edges) %>%
+                                 data.frame() %>%
+                                 tibble(),
+                               species_contact_graph %>%
+                                 activate(edges) %>%
+                                 data.frame() %>%
+                                 tibble() %>%
+                                 rename("to" = "from",
+                                        "from" = "to")) %>%
+  distinct()
 
 contacts <- observed_contacts %>%
   left_join(observed_individuals %>%
@@ -149,99 +209,78 @@ summarise_contacts <- contacts %>%
          Species_to = factor(Species_to, levels = species_order_plots, ordered = TRUE),
          Landuse_from = fct(Landuse_from, levels = c("Forest", "Agriculture", "Village")))
 
-triangle_contact <- summarise_contacts %>%
+contact_df <- summarise_contacts %>%
   rowwise() %>%
-  mutate(species_1 = min(Species_from, Species_to),
-         species_2 = max(Species_from, Species_to)) %>%
   rename(Landuse = Landuse_from) %>%
-  group_by(species_1, species_2, Landuse) %>%
+  group_by(Species_from, Landuse) %>%
+  mutate(n_contacts = sum(n)) %>%
+  group_by(Species_from, Species_to, n_contacts, Landuse) %>%
   summarise(n = sum(n)) %>%
-  ungroup()
+  ungroup() %>%
+  rowwise() %>%
+  mutate(perc_contacts = round((n/n_contacts) * 100, 0),
+         label_perc_contacts = case_when(perc_contacts == 0 ~ "<1%",
+                                         TRUE ~ paste0(perc_contacts, "%")))
 
-fill_triangle <- triangle_contact %>%
-  expand(species_1, species_2, Landuse) %>%
-  mutate(n_0 = dt_case_when(species_1 <= species_2 ~ as.integer(0),
-                            TRUE ~ as.integer(NA)))
-
-contact_df <- fill_triangle %>%
-  left_join(triangle_contact,
-            by = c("species_1", "species_2", "Landuse")) %>%
-  mutate(n = coalesce(n, n_0))
-
-forest_contact <- ggplot(contact_df %>%
-                                filter(Landuse == "Forest") %>%
-                                mutate(alpha = dt_case_when(n == 0 ~ 0,
-                                                            TRUE ~ 1),
-                                       n_discrete = cut(n, breaks = c(0, 1, 5, 10, 20, 50, 100, 200), include.lowest = TRUE, right = FALSE))) +
-  geom_tile(aes(x = species_1, y = species_2, fill = n_discrete, alpha = alpha)) +
-  scale_x_discrete(drop = FALSE, labels = function(x) str_wrap(x, width = 10)) +
-  scale_y_discrete(drop = FALSE) +
-  scale_fill_viridis(direction = -1, discrete = TRUE, na.translate = FALSE) +
-  scale_alpha(range = c(0.1, 1)) +
-  guides(alpha = "none") +
-  facet_wrap(~ Landuse) +
-  theme_bw() +
-  labs(x = element_blank(),
-       y = element_blank(),
-       alpha = element_blank(),
-       fill = "Contacts (N)")
-
-agriculture_contact <- ggplot(contact_df %>%
-                                filter(Landuse == "Agriculture") %>%
-                                mutate(alpha = dt_case_when(n == 0 ~ 0,
-                                                            TRUE ~ 1),
-                                       n_discrete = cut(n, breaks = c(0, 1, 5, 10, 20, 50, 100, 200), include.lowest = TRUE, right = FALSE))) +
-  geom_tile(aes(x = species_1, y = species_2, fill = n_discrete, alpha = alpha)) +
-  scale_x_discrete(drop = FALSE, labels = function(x) str_wrap(x, width = 10)) +
-  scale_y_discrete(drop = FALSE) +
-  scale_fill_viridis(direction = -1, discrete = TRUE, na.translate = FALSE) +
-  scale_alpha(range = c(0.1, 1)) +
-  guides(alpha = "none") +
-  facet_wrap(~ Landuse) +
-  theme_bw() +
-  labs(x = element_blank(),
-       y = element_blank(),
-       alpha = element_blank(),
-       fill = "Contacts (N)")
-
-village_contact <- ggplot(contact_df %>%
-                            filter(Landuse == "Village") %>%
-                            mutate(alpha = dt_case_when(n == 0 ~ 0,
-                                                        TRUE ~ 1),
-                                   n_discrete = cut(n, breaks = c(0, 1, 5, 10, 20, 50, 100, 200), include.lowest = TRUE, right = FALSE))) +
-  geom_tile(aes(x = species_1, y = species_2, fill = n_discrete, alpha = alpha)) +
-  scale_x_discrete(drop = FALSE, labels = function(x) str_wrap(x, width = 10)) +
-  scale_y_discrete(drop = FALSE) +
-  scale_fill_viridis(direction = -1, discrete = TRUE, na.translate = FALSE) +
-  scale_alpha(range = c(0.1, 1)) +
-  guides(alpha = "none") +
-  facet_wrap(~ Landuse) +
-  theme_bw() +
-  labs(x = element_blank(),
-       y = element_blank(),
-       alpha = element_blank(),
-       fill = "Contacts (N)")
-
-combined_contact <- plot_grid(plotlist = list(forest_contact, agriculture_contact, village_contact), ncol = 1, labels = c("A", "B", "C"))
-
-save_plot(plot = combined_contact, filename = here("output", "Figure_3.png"), base_height = 10, base_width = 12)
-
-n_contacts_n_observed <- bind_rows(contacts,
-                                   contacts %>%
-                                     rename(Species_to = Species_from,
-                                            Species_from = Species_to)) %>%
-  distinct(Species_from, Species_to) %>%
-  filter(Species_from != Species_to) %>%
+n_species_contacts <- contact_df %>%
   group_by(Species_from) %>%
-  summarise(n_species = n()) %>%
-  left_join(observed_individuals %>%
-              group_by(Species) %>%
-              summarise(n_individuals = n()),
-            by = c("Species_from" = "Species")) %>%
-  arrange(-n_species)
+  summarise(n_distinct_species = length(unique(Species_to))) %>%
+  left_join(rodent_detail %>%
+              group_by(species) %>%
+              summarise(n = n()) %>%
+              mutate(species = factor(species, levels = species_order_plots, ordered = TRUE)),
+            by = c("Species_from" = "species"))
 
-correlation_n_species <- cor.test(n_contacts_n_observed$n_species, n_contacts_n_observed$n_individuals, method = "pearson")
+cor.test(n_species_contacts$n_distinct_species, n_species_contacts$n, method = "pearson")
+  
+forest_contact_plot <- contact_df %>%
+  filter(Landuse == "Forest") %>%
+  ggplot() +
+  geom_tile(aes(x = Species_from, y = Species_to, fill = perc_contacts)) +
+  geom_label(aes(x = Species_from, y = Species_to, label = label_perc_contacts)) +
+  scale_x_discrete(drop = FALSE,  labels = function(x) str_wrap(x, width = 10)) +
+  scale_y_discrete(drop = FALSE) +
+  scale_fill_viridis_c(direction = -1) +
+  theme_bw() +
+  labs(x = "Contact to",
+       y = "Contact from",
+       title = "Forest",
+       fill = "Percentage of contacts (%)")
 
+ag_contact_plot <- contact_df %>%
+  filter(Landuse == "Agriculture") %>%
+  ggplot() +
+  geom_tile(aes(x = Species_from, y = Species_to, fill = perc_contacts)) +
+  geom_label(aes(x = Species_from, y = Species_to, label = label_perc_contacts)) +
+  scale_x_discrete(drop = FALSE,  labels = function(x) str_wrap(x, width = 10)) +
+  scale_y_discrete(drop = FALSE) +
+  scale_fill_viridis_c(direction = -1) +
+  theme_bw() +
+  labs(x = "Contact to",
+       y = "Contact from",
+       title = "Agriculture",
+       fill = "Percentage of contacts (%)")
+
+vil_contact_plot <- contact_df %>%
+  filter(Landuse == "Village") %>%
+  ggplot() +
+  geom_tile(aes(x = Species_from, y = Species_to, fill = perc_contacts)) +
+  geom_label(aes(x = Species_from, y = Species_to, label = label_perc_contacts)) +
+  scale_x_discrete(drop = FALSE,  labels = function(x) str_wrap(x, width = 10)) +
+  scale_y_discrete(drop = FALSE) +
+  scale_fill_viridis_c(direction = -1) +
+  theme_bw() +
+  labs(x = "Contact to",
+       y = "Contact from",
+       title = "Village",
+       fill = "Percentage of contacts (%)")
+
+save_plot(plot = forest_contact_plot +
+            theme(legend.position = "bottom"), filename = here("output", "Supplementary_Figure_4a.png"), base_height = 12, base_width = 14)
+save_plot(plot = ag_contact_plot +
+            theme(legend.position = "bottom"), filename = here("output", "Figure_3_updated.png"), base_height = 10, base_width = 14)
+save_plot(plot = vil_contact_plot +
+            theme(legend.position = "bottom"), filename = here("output", "Supplementary_Figure_4b.png"), base_height = 12, base_width = 14)
 
 # Node level descriptive figures ------------------------------------------
 
@@ -363,3 +402,25 @@ species_degree %>%
   scale_fill_manual(values = landuse_palette) +
   facet_wrap(~ Species, ncol = 1) +
   theme_bw()
+
+# Association of degree with antibody status ------------------------------
+
+elisa_status <- combined_data$ELISA_enriched %>%
+  group_by(rodent_uid) %>%
+  arrange(interpretation) %>%
+  filter(rodent_uid %in% rodents$rodent_uid) %>%
+  select(rodent_uid, interpretation, clean_names) %>%
+  left_join(node_level_descriptives,
+            by = "rodent_uid") %>%
+  drop_na(interpretation)
+
+plot(elisa_status$interpretation, elisa_status$degree)
+plot(elisa_status$interpretation, elisa_status$betweenness)
+
+networks_containing_positive <- elisa_status %>%
+  filter(interpretation == "Positive") %>%
+  distinct(network_number)
+
+positive_m_nat_landuse <- elisa_status %>%
+  filter(interpretation == "Positive") %>%
+  filter(species == "Mastomys natalensis")
