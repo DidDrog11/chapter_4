@@ -136,15 +136,19 @@ node_level_descriptives %>%
 figure_2_updated <- node_level_descriptives %>%
   mutate(species = fct(species, levels = species_order_plots)) %>%
   ungroup() %>%
-  ggplot(aes(x = species, y = degree, fill = landuse)) +
-  geom_boxplot(position = position_dodge(0.9, preserve = "total"), alpha = 1, outlier.shape = 21) +
+  ggplot() +
+  geom_boxplot(aes(x = species, y = degree, fill = landuse),
+               na.rm = FALSE,
+               position = position_dodge(preserve = 'single'),
+               outlier.shape = 21) +
+  facet_wrap(~ species, scales = "free_y", ncol = 1) +
   coord_flip() +
   scale_fill_manual(values = landuse_palette) +
   scale_colour_manual(values = landuse_palette) +
-  facet_wrap(~ species, scales = "free_y", ncol = 1) +
   theme_bw() +
   theme(strip.background = element_blank(),
-        strip.text.x = element_blank()) +
+        strip.text.x = element_blank(),
+        axis.text.y = element_text(face = "italic")) +
   labs(fill = "Land use",
        colour = "Land use",
        x = "Species",
@@ -242,6 +246,7 @@ forest_contact_plot <- contact_df %>%
   scale_y_discrete(drop = FALSE) +
   scale_fill_viridis_c(direction = -1) +
   theme_bw() +
+  theme(axis.text = element_text(face = "italic")) +
   labs(x = "Contact to",
        y = "Contact from",
        title = "Forest",
@@ -256,6 +261,7 @@ ag_contact_plot <- contact_df %>%
   scale_y_discrete(drop = FALSE) +
   scale_fill_viridis_c(direction = -1) +
   theme_bw() +
+  theme(axis.text = element_text(face = "italic")) +
   labs(x = "Contact to",
        y = "Contact from",
        title = "Agriculture",
@@ -270,6 +276,7 @@ vil_contact_plot <- contact_df %>%
   scale_y_discrete(drop = FALSE) +
   scale_fill_viridis_c(direction = -1) +
   theme_bw() +
+  theme(axis.text = element_text(face = "italic")) +
   labs(x = "Contact to",
        y = "Contact from",
        title = "Village",
@@ -283,25 +290,6 @@ save_plot(plot = vil_contact_plot +
             theme(legend.position = "bottom"), filename = here("output", "Supplementary_Figure_4b.png"), base_height = 12, base_width = 14)
 
 # Node level descriptive figures ------------------------------------------
-
-node_level_descriptives <- lapply(rodent_network, function(x) {
-  
-  observed <- x%v%"Observed"
-  observed_subgraph <- x %s% which(observed == TRUE)
-  observed_igraph <- asIgraph(observed_subgraph)
-  
-  descriptives <- tibble(species = observed_subgraph%v%"Species",
-                         landuse = observed_subgraph%v%"Landuse",
-                         visit = observed_subgraph%v%"Visit",
-                         village = observed_subgraph%v%"Village",
-                         degree = igraph::degree(observed_igraph, mode = "out"))
-}) %>%
-  bind_rows(.id = "network_number") %>%
-  relocate(network_number, landuse, visit, village, species) %>%
-  mutate(network_number = fct(network_number),
-         species = fct(species, levels = species_order_plots),
-         landuse = fct(landuse, levels = c("Forest", "Agriculture", "Village")))
-
 
 plot_landuse_degree <- node_level_descriptives %>% 
   mutate(species = fct_rev(species),
@@ -351,29 +339,112 @@ network_plots <- function(network, fig_label) {
            Observed = network%v%"Observed",
            Species = network%v%"Species",
            Village = network%v%"Village",
-           Visit = network%v%"Visit")
+           Visit = network%v%"Visit") %>%
+    mutate(Species = factor(Species, levels = c(all_species_order, "Other"))) %>%
+    filter(Observed == TRUE)
     
   fig <- ggraph(gg_graph, layout = "kk")  +
     geom_edge_fan() +
-    geom_node_point(aes(colour = Species, alpha = Observed)) +
-    scale_alpha_manual(values = c(0.1, 1)) +
-    scale_colour_manual(values = species_palette) +
-    theme_graph() +
-    guides(alpha = "none") +
+    geom_node_point(aes(colour = Species)) +
+    scale_colour_discrete(drop = FALSE) +
+    theme_graph(foreground = 'steelblue', fg_text_colour = 'white', base_family = 'Helvetica') +
+    guides(alpha = "none",
+           size = "none") +
     labs(title = paste0(unique(gg_graph %>%
-                                 pull(Landuse)), ", visit ",
-                        unique(gg_graph %>%
                                  pull(Visit))))
-  
-  save_plot(filename = here("output", paste0("Supplementary_Figure_3", fig_label, ".png")), plot = fig, base_width = 8, base_height = 6)
 
   }
 
-for(i in 1:length(rodent_network)) {
-  
-  network_plots(network = rodent_network[[i]], fig_label = LETTERS[i])
-  
-}
+net_plots <- list()
+net_plots <- lapply(rodent_network, function(x) network_plots(network = x))
+
+forest_plots <- plot_grid(plotlist = list(net_plots[[1]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[2]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[3]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[4]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[5]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[6]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[7]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[8]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[9]] +
+                                            theme(legend.position = "none"),
+                                          "",
+                                          get_legend(net_plots[[1]] +
+                                                       guides(colour = guide_legend(nrow = 5)) +
+                                                       theme(legend.position = "bottom"))),
+                          ncol = 3,
+                          rel_heights = c(1, 1, 1, 1, 1, 1, 1, 1, 1, 0.2),
+                          rel_widths = c(1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5))
+
+save_plot(plot = forest_plots, filename = here("output", "forest_networks.pdf"), base_height = 12, base_width = 8)
+
+agriculture_plots <- plot_grid(plotlist = list(net_plots[[10]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[11]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[12]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[13]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[14]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[15]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[16]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[17]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[18]] +
+                                            theme(legend.position = "none"),
+                                          net_plots[[19]] +
+                                            theme(legend.position = "none"),
+                                          get_legend(net_plots[[10]] +
+                                                       guides(colour = guide_legend(nrow = 9,
+                                                                                    title = element_blank())) +
+                                                       theme(legend.position = "bottom"))),
+                          ncol = 3,
+                          rel_heights = c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.2),
+                          rel_widths = c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5))
+
+save_plot(plot = agriculture_plots, filename = here("output", "agriculture_networks.pdf"), base_height = 12, base_width = 8)
+
+village_plots <- plot_grid(plotlist = list(net_plots[[20]] +
+                                                 theme(legend.position = "none"),
+                                               net_plots[[21]] +
+                                                 theme(legend.position = "none"),
+                                               net_plots[[22]] +
+                                                 theme(legend.position = "none"),
+                                               net_plots[[23]] +
+                                                 theme(legend.position = "none"),
+                                               net_plots[[24]] +
+                                                 theme(legend.position = "none"),
+                                               net_plots[[25]] +
+                                                 theme(legend.position = "none"),
+                                               net_plots[[26]] +
+                                                 theme(legend.position = "none"),
+                                               net_plots[[27]] +
+                                                 theme(legend.position = "none"),
+                                               net_plots[[28]] +
+                                                 theme(legend.position = "none"),
+                                               net_plots[[29]] +
+                                                 theme(legend.position = "none"),
+                                               get_legend(net_plots[[20]] +
+                                                            guides(colour = guide_legend(nrow = 9,
+                                                                                         title = element_blank())) +
+                                                            theme(legend.position = "bottom"))),
+                               ncol = 3,
+                               rel_heights = c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.2),
+                               rel_widths = c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5))
+
+save_plot(plot = village_plots, filename = here("output", "village_networks.pdf"), base_height = 12, base_width = 8)
 
 
 # Plot species level properties -------------------------------------------
@@ -412,7 +483,7 @@ elisa_status <- combined_data$ELISA_enriched %>%
   select(rodent_uid, interpretation, clean_names) %>%
   left_join(node_level_descriptives,
             by = "rodent_uid") %>%
-  drop_na(interpretation)
+  select(-clean_names)
 
 plot(elisa_status$interpretation, elisa_status$degree)
 plot(elisa_status$interpretation, elisa_status$betweenness)
@@ -424,3 +495,49 @@ networks_containing_positive <- elisa_status %>%
 positive_m_nat_landuse <- elisa_status %>%
   filter(interpretation == "Positive") %>%
   filter(species == "Mastomys natalensis")
+
+# Positive individuals
+
+positive_individuals <- elisa_status %>%
+  filter(interpretation %in% c("Positive"))
+
+mean(positive_individuals$degree)
+sd(positive_individuals$degree)
+
+negative_individuals <- elisa_status %>%
+  filter(interpretation %in% c("Negative"))
+
+mean(negative_individuals$degree)
+sd(negative_individuals$degree)
+
+compare_pos_neg <- elisa_status %>%
+  filter(interpretation %in% c("Positive", "Negative")) %>%
+  droplevels()
+
+wilcox.test(degree ~ interpretation, data = compare_pos_neg, correct = TRUE)
+
+# Within species comparisons
+positive_species <- unique(positive_individuals$species)
+
+within_species_degree <- negative_individuals %>%
+  filter(species %in% positive_species) %>%
+  bind_rows(positive_individuals) %>%
+  group_by(species)
+
+ab_status_degree_test <- within_species_degree %>%
+  group_split() %>%
+  lapply(., function(x) wilcox.test(degree ~ interpretation, data = x, exact = FALSE))
+
+names(ab_status_degree_test) <- group_keys(within_species_degree) %>% 
+  pull(species)
+
+# Betweenness comparison
+wilcox.test(betweenness ~ interpretation, data = compare_pos_neg, correct = TRUE)
+
+
+ab_status_betweenness_test <- within_species_degree %>%
+  group_split() %>%
+  lapply(., function(x) wilcox.test(betweenness ~ interpretation, data = x, exact = FALSE))
+
+names(ab_status_betweenness_test) <- group_keys(within_species_degree) %>% 
+  pull(species)

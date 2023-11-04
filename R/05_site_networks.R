@@ -11,9 +11,8 @@ estimated_abundance <- if(file.exists(here("data", "estimated_population.rds")))
 # Load in the rodent data and split by landuse and visit
 rodents <- unique_rodents %>%
   drop_na(species) %>%
-  drop_na(grid_number) %>%
-  left_join(trap_data, by = c("trap_id", "village", "grid_number", "visit")) %>%
-  group_by(rodent_id) %>%
+  left_join(trap_data, by = c("trap_uid", "village", "visit")) %>%
+  group_by(rodent_uid) %>%
   arrange(site_id) %>%
   slice(1) %>%
   select(rodent_id, species, village, visit, grid_number, site_id, landuse, trap_northing, trap_easting)

@@ -73,12 +73,122 @@ table_1_df <- unique_rodents %>%
          perc_all_positive = round((n_positive/total_positive) * 100, 1)) %>%
   arrange(-n_positive, -n_individuals) %>%
   mutate(Species = species,
-         `Indviduals (N)` = n_individuals,
+         `Individuals (N)` = n_individuals,
          `LASV Antibody detected (%)` = paste0(n_positive, " (", perc_positive, "%)"),
          `Percentage of all positive individuals` = paste0(perc_all_positive, "%")) %>%
-  select(Species, `Indviduals (N)`, `LASV Antibody detected (%)`, `Percentage of all positive individuals`)
+  select(Species, `Individuals (N)`, `LASV Antibody detected (%)`, `Percentage of all positive individuals`)
 
-table_1_ft <- flextable(table_1_df) %>%
+# Prevalence Odds Ratio (POR) by species 
+por_df <- unique_rodents %>%
+  mutate(seropositive = case_when(interpretation == "Positive" ~ 1,
+                                  TRUE ~ 0)) %>%
+  select(species, seropositive) %>%
+  group_by(species) %>%
+  filter(n() >= 10) %>%
+  ungroup()
+
+# Set "Mastomys natalensis" as the reference category
+por_df$species <- relevel(por_df$species, ref = "Mastomys natalensis")
+por_df$species <- droplevels(por_df$species)
+
+# Define the prior probability levels
+prior_mas = 0.3       # Prior probability for Mastomys natalensis > 10%
+prior_non_mas = 0.05  # Prior probability for non-Mastomys, non-Crocidura species (1-10%)
+prio_croc = NULL      # Non-informative prior for Crocidura species
+
+# Define the Bayesian logistic regression model
+model <- brm(
+  seropositive ~ species,
+  data = por_df,
+  family = bernoulli(link = "logit"),
+  prior = set_prior("normal(0, 1)", class = "b"),
+  sample_prior = TRUE,
+  iter = 2000,
+  warmup = 1000,
+  chains = 4
+)
+
+# Extract the posterior samples of the coefficients
+post_samples <- as_draws_df(model, variable = "^b_species", regex = TRUE) %>%
+  gather(Species, Estimate, starts_with("b_species"))
+
+species_mapping <- c(
+  "Crocidurabuettikoferi" = "Crocidura buettikoferi",
+  "Crociduragrandiceps" = "Crocidura grandiceps",
+  "Crociduraolivieri" = "Crocidura olivieri",
+  "Lemniscomysstriatus" = "Lemniscomys striatus",
+  "Lophuromyssikapusi" = "Lophuromys sikapusi",
+  "Malacomysedwardsi" = "Malacomys edwardsi",
+  "Musmusculus" = "Mus musculus",
+  "Mussetulosus" = "Mus setulosus",
+  "Praomysrostratus" = "Praomys rostratus",
+  "Rattusrattus" = "Rattus rattus"
+)
+
+# Remove the "b_species" prefix and rename the species
+summary_df <- post_samples %>%
+  mutate(
+    Species = gsub("^b_species", "", Species),
+    Species = species_mapping[Species],
+    Species = fct_rev(factor(Species, levels = species_order_n))
+  )
+
+# Calculate the mean and 95% credible interval
+summary_stats <- summary_df %>%
+  group_by(Species) %>%
+  summarize(
+    Mean = mean(Estimate),
+    CI_low = quantile(Estimate, 0.025),
+    CI_high = quantile(Estimate, 0.975)
+  )
+
+# Create a forest plot using ggplot
+ggplot(summary_df, aes(x = Estimate, fill = Species)) +
+  geom_density(alpha = 0.7) +
+  facet_wrap(~ Species, ncol = 1) +
+  labs(
+    x = "Difference in Probability (vs. Mastomys natalensis)",
+    y = "Density",
+    title = "Density Plot of Difference in Probability of Seropositivity by Species (vs. Mastomys natalensis)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  geom_vline(xintercept = 0, linetype = "dashed")
+
+odds_seropositivity <- ggplot() +
+  geom_density_ridges(data = summary_df, aes(x = Estimate, y = Species), scale = 1, fill = "lightblue", alpha = 0.6) +
+  geom_point(data = summary_stats, aes(x = Mean, y = Species), size = 3, color = "black") +
+  geom_errorbarh(data = summary_stats, aes(xmin = CI_low, xmax = CI_high, y = Species), height = 0.2, color = "black", size = 1) +
+  labs(
+    x = expression('Difference in Log-Odds vs.'~italic('Mastomys natalensis')~'(Reference)'),
+    y = "Species",
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12, face = "italic"),
+  ) +
+  scale_x_continuous(breaks = seq(-2, 2, 0.5)) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  coord_cartesian(clip = 'off')
+
+save_plot(filename = here("output", "seropositivity_OR_output.png"), plot = odds_seropositivity, base_width = 8)
+
+# Add ORs to table
+table_1_updated <- table_1_df %>%
+  left_join(summary_stats %>%
+              mutate(`OR (95% CrI)` = paste0(round(Mean, 2), " (", round(CI_low, 2), "-", round(CI_high, 2), ")")) %>%
+              select(Species, `OR (95% CrI)`),
+            by = "Species")
+# Add "ref" to table
+table_1_updated[1, 5] <- "ref"
+
+write_rds(table_1_updated, here("output", "unformatted_Table_1.rds"))
+
+table_1_ft <- flextable(table_1_updated) %>%
   italic(j = 1, part = "body")
 
 write_rds(table_1_ft, here("output", "Table_1.rds"))
@@ -111,7 +221,7 @@ rodent_detail %>%
          prop_positive = round(n_positive/total_positive * 100, 1),
          prop_landuse = round(n_positive/tested_landuse * 100, 1))
 
-rodent_detail %>%
+season_tab <- rodent_detail %>%
   mutate(n_positive = case_when(interpretation == "Positive" ~ 1,
                                 TRUE ~ 0)) %>%
   left_join(visit_season, by = c("visit")) %>%
@@ -122,20 +232,76 @@ rodent_detail %>%
          prop_positive = round(n_positive/total_positive * 100, 1),
          prop_season = round(n_positive/tested_season * 100, 1))
 
-## Needs sorting when more ELISA data available
-# rodent_detail %>%
-#   group_by(visit) %>%
-#   mutate(tested_visit = n(),
-#          month = min(month(date_set), na.rm = TRUE)) %>%
-#   group_by(visit, month, interpretation) %>%
-#   summarise(n = n()) %>%
-#   group_by(visit) %>%
-#   mutate(prop = n/sum(n))
-# 
-# rodent_detail %>%
-#   group_by(visit, interpretation) %>%
-#   summarise(tested_visit = n(),
-#             month = min(month(date_set), na.rm = TRUE)) %>%
-#   mutate(interpretation = as.character(interpretation),
-#          interpretation = replace_na(interpretation, "Not tested")) %>%
-#   arrange(month, visit, interpretation)
+season_tab_chi <- as.table(rbind(c(16, 444-16),
+                                 c(23, 240-23)))
+dimnames(season_tab_chi) <- list(season = c("Dry", "Rainy"),
+                                 serostatus = c("Positive", "Negative"))
+
+(seasonal <- chisq.test(season_tab_chi))
+
+# Figure 1 ----------------------------------------------------------------
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+africa <- world %>%
+  filter(str_detect(continent, "Africa")) %>%
+  select(admin) %>%
+  mutate(fill = case_when(str_detect(admin, "Sierra Leone") ~ "black",
+                          TRUE ~ "grey")) %>%
+  ms_filter_islands(min_area = 1e10)
+
+sl_bbox <- africa %>%
+  filter(str_detect(admin, "Sierra Leone")) %>%
+  st_bbox() %>%
+  st_as_sfc()
+
+africa_map <- ggplot() +
+  geom_sf(data = africa, aes(fill = fill)) +
+  geom_sf(data = sl_bbox, fill = NA, colour = "black", size = 4) +
+  scale_fill_manual(values = c("grey", "white")) +
+  guides(fill = "none") +
+  theme_void()
+
+sle_sf <- geodata::gadm(country = "SLE", level = 2, path = here("data", "geodata")) %>%
+  st_as_sf()
+
+fig_1_palette <- c(village_palette, "#FFFFFF")
+names(fig_1_palette) <- c(names(village_palette)[1:4], "poi")
+
+poi <- tibble(name = c("Kenema", "Baiama", "Lalehun", "Lambayama", "Seilama"),
+              cat = c("poi", "Baiama", "Lalehun", "Lambayama", "Seilama"),
+              lat = c(7.876161956810467, 7.837529372181356, 8.197392257077409, 7.850593096948891, 8.12230048178563),
+              lon = c(-11.190811585001954, -11.268407665149846, -11.08032958100431, -11.196939025872055, -11.1935976318381)) %>%
+  st_as_sf(coords = c("lon", "lat"), crs = default_CRS)
+
+
+# Focus map on Kenema
+kenema_map <- get_googlemap(st_coordinates(poi %>% filter(name == "Kenema"))[1, ], zoom = 9, maptype = "satellite", scale = 2) %>%
+  rast() %>%
+  mask(vect(sle_sf %>%
+              filter(str_detect(NAME_2, "Kenema"))))
+
+zoom_kenema <- sle_sf %>%
+  filter(str_detect(NAME_2, "Kenema")) %>% st_bbox()
+
+study_map <- ggplot() + 
+  geom_sf(data = sle_sf, fill = "grey", colour = "black") +
+  geom_spatraster_rgb(data = kenema_map) +
+  geom_sf(data = sle_sf %>%
+            filter(str_detect(NAME_2, "Kenema")), fill = NA, colour = "white") +
+  geom_sf(data = poi, size = 0.8) +
+  ggrepel::geom_label_repel(data = poi, aes(label = name, geometry = geometry, fill = cat), stat = "sf_coordinates", min.segment.length = 0) +
+  labs(x = element_blank(),
+       y = element_blank()) +
+  scale_fill_manual(values = fig_1_palette) +
+  theme_bw() +
+  annotation_north_arrow(style = north_arrow_minimal()) +
+  annotation_scale(location = "br") +
+  coord_sf(xlim = c(zoom_kenema[1], zoom_kenema[3]), ylim = c(zoom_kenema[2], zoom_kenema[4])) +
+  guides(fill = "none")
+
+sl_inset_map <- ggdraw() +
+  draw_plot(study_map) +
+  draw_plot(africa_map, x = 0.7, y = 0.7, width = 0.3, height = 0.3)
+
+ggsave2(plot = sl_inset_map, filename = here("output", "Figure_1.png"), dpi = 300, width = 8, height = 6)

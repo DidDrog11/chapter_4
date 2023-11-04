@@ -31,6 +31,8 @@ network_numbers <- trap_data %>%
          "Grid" = grid) %>%
   distinct(Network, Village, Visit, Grid, Landuse)
 
+write_rds(network_numbers, here("temp", "network_numbers.rds"))
+
 species_n <- tibble(bind_rows(landuse_visit_rodents)) %>%
   group_by(species) %>%
   summarise(N = n())

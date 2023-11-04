@@ -1,12 +1,16 @@
 if (!require("pacman")) install.packages("pacman")
 
 pkgs =
-  c("cowplot",
+  c("broom",
+    "brms",
+    "cowplot",
     "ergm",
     "flextable",
     "ggdist",
     "ggforce",
     "ggraph",
+    "ggmap",
+    "ggspatial",
     "here",
     "HomeRange",
     "igraph",
@@ -18,11 +22,15 @@ pkgs =
     "osmdata",
     "patchwork",
     "RColorBrewer",
+    "rmapshaper",
+    "rnaturalearth",
     "rosm",
     "sf",
     "statnet",
+    "terra",
     "tidyfast",
     "tidygraph",
+    "tidyterra",
     "tidyverse",
     "unmarked"
   )
@@ -47,6 +55,10 @@ all_species_order <- c("Mastomys natalensis", "Rattus rattus", "Mus musculus", "
 species_order_plots <- c("Mastomys natalensis", "Rattus rattus", "Mus musculus", "Crocidura olivieri", "Praomys rostratus", "Lophuromys sikapusi",
                          "Mus setulosus", "Crocidura buettikoferi", "Crocidura grandiceps", "Malacomys edwardsi", "Lemniscomys striatus",
                          "Hylomyscus simus", "Hybomys planifrons", "Mastomys erythroleucus", "Crocidura theresae", "Gerbilliscus guineae", "Dasymys rufulus")
+
+species_order_n <- c("Mastomys natalensis", "Crocidura olivieri", "Praomys rostratus", "Mus musculus", "Rattus rattus", "Lophuromys sikapusi",
+                     "Mus setulosus", "Crocidura buettikoferi", "Crocidura grandiceps", "Malacomys edwardsi", "Lemniscomys striatus",
+                     "Hylomyscus simus", "Hybomys planifrons", "Crocidura theresae", "Mastomys erythroleucus", "Gerbilliscus guineae", "Dasymys rufulus")
 
 group_landuse_palette <- c("#00913a", "#FEC44F", "#F7A820", "#A13B9E", "#5407A6")
 names(group_landuse_palette) <- c("Forest - Rural", "Agriculture - Rural", "Agriculture - Peri-urban", "Village - Rural", "Village - Peri-urban")
